@@ -1,0 +1,18 @@
+/*
+ * Application stuff; e.g the command line args to the simulator, etc.
+ * Useful for code that want's to look at these things.
+ */
+
+#ifndef __R5SIM_APP_H__
+#define __R5SIM_APP_H__
+
+struct r5sim_app_args {
+	int         help;
+	int         verbose;
+	const char *bootrom;
+};
+
+struct r5sim_app_args *
+r5sim_app_get_args(void);
+
+#endif

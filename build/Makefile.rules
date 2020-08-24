@@ -1,0 +1,34 @@
+# -*- mode: makefile -*-
+# Some general rules that can be used for building C files, etc.
+#
+
+DEPDIR := .deps
+DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
+
+# Build C based programs and tests from your list of $(OBJS).
+% : %.c $(OBJS) $(DEPFILES) | $(DEPDIR)
+	@echo "  [CC]		$@"
+	@$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -o $@ $@.c $(OBJS) $(LIBS)
+
+# Build C based object files.
+%.o : %.c $(DEPDIR)/%.d | $(DEPDIR)
+	@echo "  [CC]		$@"
+	@$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+
+# Assemble programs.
+% : %.S $(OBJS) $(DEPFILES) | $(DEPDIR)
+	@echo "  [AS]		$@"
+	@$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -o $@ $@.S $(OBJS) $(LIBS)
+
+# Assemble object files.
+%.o : %.S $(DEPDIR)/%.d | $(DEPDIR)
+	@echo "  [AS]		$@"
+	@$(R5CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+
+$(DEPDIR):
+	@mkdir -p $@
+
+DEPFILES := $(OBJS:%.o=$(DEPDIR)/%.d)
+$(DEPFILES):
+
+include $(wildcard $(DEPFILES))

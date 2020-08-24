@@ -1,0 +1,10 @@
+# C generic
+*.d
+*.o
+
+# r5sim specific
+bin/*
+
+# Some binaries that get left around in the build process.
+src/r5sim
+brom/brom
