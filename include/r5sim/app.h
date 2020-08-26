@@ -10,6 +10,7 @@ struct r5sim_app_args {
 	int         help;
 	int         verbose;
 	const char *bootrom;
+	const char *disk_file;
 };
 
 struct r5sim_app_args *

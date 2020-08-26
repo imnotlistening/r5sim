@@ -15,6 +15,7 @@
 #include <r5sim/core.h>
 #include <r5sim/util.h>
 #include <r5sim/vuart.h>
+#include <r5sim/vdisk.h>
 #include <r5sim/iodev.h>
 #include <r5sim/machine.h>
 #include <r5sim/simple_core.h>
@@ -81,7 +82,7 @@ r5sim_default_io_memload(struct r5sim_machine *mach,
 	 */
 	r5sim_warn("Load to non-existent IO addr: 0x%08x\n", paddr);
 
-	return 0xBADFBADF;
+	return 0x0;
 }
 
 static void
@@ -306,6 +307,7 @@ r5sim_machine_add_device(struct r5sim_machine *mach,
 struct r5sim_machine *
 r5sim_machine_load_default(void)
 {
+	struct r5sim_app_args *args = r5sim_app_get_args();
 	struct r5sim_machine *mach = &default_machine;
 	struct r5sim_iodev *vuart;
 
@@ -321,10 +323,17 @@ r5sim_machine_load_default(void)
 
 	INIT_LIST_HEAD(&mach->io_devs);
 
-	vuart = r5sim_vuart_load_new(0x0);
+	vuart = r5sim_vuart_load_new(mach, 0x0);
 	r5sim_assert(vuart != NULL);
 
 	r5sim_assert(r5sim_machine_add_device(mach, vuart) == 0);
+
+	if (args->disk_file) {
+		struct r5sim_iodev *vdisk =
+			r5sim_vdisk_load_new(mach, 0x1000, args->disk_file);
+
+		r5sim_assert(r5sim_machine_add_device(mach, vdisk) == 0);
+	}
 
 	return mach;
 }
@@ -356,11 +365,6 @@ r5sim_machine_load_brom(struct r5sim_machine *mach)
 
 		if (bytes == 0)
 			break;
-
-		r5sim_dbg("BROM Load: brom_offs = 0x%x, bytes = %ld\n",
-			   brom_offs, bytes);
-		r5sim_dbg("  Max bytes: %d\n", max_bytes);
-
 
 		/*
 		 * Otherwise copy the read bytes into the bootrom but make sure

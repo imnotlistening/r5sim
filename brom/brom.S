@@ -9,7 +9,7 @@
 .globl start
 
 #define DRAM_START	0x40000000
-#define DRAM_STACK	0x40001000
+#define DRAM_STACK	0x50000000
 
 /*
  * The truly first code; this is loaded at BROM_BASE + 0x0. This is the

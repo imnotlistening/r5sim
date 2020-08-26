@@ -12,7 +12,8 @@ CC        = riscv64-linux-gnu-gcc
 CFLAGS    += -ffreestanding -march=rv32i -mabi=ilp32    \
              -Wl,--build-id=none -nostartfiles -nodefaultlibs -T brom.lds
 
-INCLUDES  =
+INCLUDES  = -I$(R5SIM_DIR)/include
+
 LIBS      =
 
 BINS      = brom

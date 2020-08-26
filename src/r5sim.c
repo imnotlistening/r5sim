@@ -16,10 +16,11 @@ static struct option app_opts[] = {
 	{ "verbose",		0, NULL, 'v' },
 	{ "quiet",		0, NULL, 'q' },
 	{ "bootrom",		1, NULL, 'b' },
+	{ "disk",		1, NULL, 'd' },
 	{ NULL,			0, NULL,  0  }
 };
 
-static const char *app_opts_str = "hvb:";
+static const char *app_opts_str = "hvb:d:";
 
 static void r5sim_help(void) {
 
@@ -36,6 +37,8 @@ static void r5sim_help(void) {
 "  -q,--quiet            Decrease the verbosity. Can be specified multiple\n"
 "                        times.\n"
 "  -b,--bootrom          Specify a bootrom to load/execute.\n"
+"  -d,--disk             Specify a file to treat as a disk. This will be loaded\n"
+"                        as a VDISK device.\n"
 "\n"
 "Execute the R5 simulator; BOOTROM is a binary blob of instructions/data\n"
 "that should be loaded into memory and executed. This will be the first\n"
@@ -44,9 +47,18 @@ static void r5sim_help(void) {
 
 }
 
-static int r5sim_getopts(int argc, char * const argv[])
+static void
+r5sim_set_default_opts(void)
+{
+	app_args.verbose = INFO;
+}
+
+static int
+r5sim_getopts(int argc, char * const argv[])
 {
 	int c, opt_index;
+
+	r5sim_set_default_opts();
 
 	while (1) {
 		c = getopt_long(argc, argv,
@@ -67,6 +79,9 @@ static int r5sim_getopts(int argc, char * const argv[])
 			break;
 		case 'b':
 			app_args.bootrom = optarg;
+			break;
+		case 'd':
+			app_args.disk_file = optarg;
 			break;
 		case '?':
 			app_args.help = 1;

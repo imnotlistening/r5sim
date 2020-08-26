@@ -8,8 +8,10 @@
 #include <stdint.h>
 
 struct r5sim_iodev;
+struct r5sim_machine;
 
 struct r5sim_iodev *
-r5sim_vuart_load_new(uint32_t io_offs);
+r5sim_vuart_load_new(struct r5sim_machine *mach,
+		     uint32_t io_offs);
 
 #endif

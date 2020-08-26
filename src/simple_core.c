@@ -269,6 +269,7 @@ exec_jal(struct r5sim_machine *mach,
 	uint32_t lr = core->pc + 4;
 	uint32_t offset;
 
+	r5sim_trace("  __ JAL:  lr=%-2d [0x%08x]\n", inst->rd, lr);
 	__set_reg(core, inst->rd, lr);
 
 	offset = (inst->imm_20    << 20) |
@@ -277,6 +278,8 @@ exec_jal(struct r5sim_machine *mach,
 		 (inst->imm_10_1  << 1);
 
 	core->pc += sign_extend(offset, 20);
+
+	r5sim_trace("          New PC: 0x%08x\n", core->pc);
 
 	return 0;
 }
@@ -289,14 +292,14 @@ exec_jalr(struct r5sim_machine *mach,
 	const r5_inst_i *inst = (const r5_inst_i *)__inst;
 	uint32_t lr = core->pc + 4;
 
-	r5sim_dbg(" __ JALR: rd=%-2d         rs=%d\n", inst->rd, inst->rs1);
-	r5sim_dbg("          rd=0x%08x rs=0x%08x\n",
+	r5sim_trace("  __ JALR: rd=%-2d         rs=%d\n", inst->rd, inst->rs1);
+	r5sim_trace("           rd=0x%08x rs=0x%08x\n",
 		   __get_reg(core, inst->rd),
 		   __get_reg(core, inst->rs1));
-	r5sim_dbg("          imm=%d (0x%x)\n",
+	r5sim_trace("          imm=%d (0x%x)\n",
 		   sign_extend(inst->imm_11_0, 11),
 		   sign_extend(inst->imm_11_0, 11));
-	r5sim_dbg("          LR=0x%x\n", lr);
+	r5sim_trace("          LR=0x%x\n", lr);
 
 	/* Set link register. */
 	__set_reg(core, inst->rd, lr);
@@ -304,7 +307,7 @@ exec_jalr(struct r5sim_machine *mach,
 	core->pc = (__get_reg(core, inst->rs1) +
 		    sign_extend(inst->imm_11_0, 11)) & ~0x1;
 
-	r5sim_dbg("          New PC: 0x%08x\n", core->pc);
+	r5sim_trace("          New PC: 0x%08x\n", core->pc);
 
 	return 0;
 }
@@ -454,10 +457,9 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 	fam = simple_core_opcode_fam(inst);
 	op_type = (inst->opcode & 0x7c) >> 2;
 
-	r5sim_dbg(" PC:       0x%08x\n", core->pc);
-	r5sim_dbg("  inst:    0x%08x\n", inst_mem);
-	r5sim_dbg("  OP code: %d\n", op_type);
-	r5sim_dbg("  OP fam:  %s (%d)\n", fam->op_name, op_type);
+	r5sim_trace("PC 0x%08x | inst=0x%08x\n", core->pc, inst_mem);
+	r5sim_trace("  OP code: %-3d fam=%-8s (%d)\n",
+		    op_type, fam->op_name, op_type);
 
 	if (fam->op_name == NULL || fam->op_exec == NULL) {
 		simple_core_inst_decode_err(inst);

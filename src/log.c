@@ -11,11 +11,12 @@
 #define R5SIM_FMT	"[%s] %15s:%-4d | %s"
 #define BUF_LIMIT	256
 
-static const char *level_messages[4] = {
+static const char *level_messages[5] = {
 	"E",
 	"W",
 	"I",
 	"D",
+	"T",
 };
 
 static const char *level_to_str(enum r5sim_log_level lvl)
@@ -34,7 +35,7 @@ __r5sim_log_print(enum r5sim_log_level lvl,
 	char buf[BUF_LIMIT];
 	struct r5sim_app_args *app = r5sim_app_get_args();
 
-	if (app->verbose < lvl)
+	if (lvl > app->verbose)
 		return;
 
 	va_start(args, fmt);
