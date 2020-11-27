@@ -28,7 +28,7 @@ typedef void (*blcall)(void);
 
 #define assert(cond)							\
 	do {								\
-		if (cond) {						\
+		if (!cond) {						\
 			__attribute__((unused)) int __x = readl(0x0);	\
 		}							\
 	} while (0)
@@ -106,12 +106,13 @@ start(void)
 {
 	int vdisk_present;
 
-	// brom_getc();
+	brom_getc();
 	brom_puts("Hello! Welcome to the r5sim!\n");
 
 	vdisk_present = readl(VDISK_BASE + VDISK_PRESENT);
 	if (!vdisk_present) {
 		brom_puts("No disk present! Cannot load bootloader.\n");
+		assert(0);
 	}
 
 	/*
