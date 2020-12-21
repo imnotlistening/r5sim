@@ -1,6 +1,6 @@
 /*
  * Application stuff; e.g the command line args to the simulator, etc.
- * Useful for code that want's to look at these things.
+ * Useful for code that wants to look at these things.
  */
 
 #ifndef __R5SIM_APP_H__
