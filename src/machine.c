@@ -397,9 +397,9 @@ r5sim_machine_print(struct r5sim_machine *mach)
 	struct r5sim_iodev *dev;
 
 	r5sim_info("Machine description: %s\n", mach->descr.name);
-	r5sim_info("  DRAM:        [0x%08x, 0x%08x)\n",
+	r5sim_info("  DRAM:        0x%08x + 0x%08x)\n",
 		   mach->memory_base, mach->memory_size);
-	r5sim_info("  IO Aperture: [0x%08x, 0x%08x)\n",
+	r5sim_info("  IO Aperture: 0x%08x + 0x%08x)\n",
 		   mach->iomem_base, mach->iomem_size);
 
 	r5sim_core_describe(mach->core);
