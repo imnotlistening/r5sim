@@ -35,6 +35,8 @@ exec_misc_mem(struct r5sim_machine *mach,
 	      struct r5sim_core *core,
 	      const r5_inst *__inst)
 {
+	r5sim_itrace("NO-OP\n");
+
 	/*
 	 * For the simple core these fence operations are just no-ops.
 	 */
@@ -457,6 +459,18 @@ simple_core_opcode_fam(r5_inst *inst)
 	return &op_families[type_bits];
 }
 
+/*
+ * Execution happens in the following order:
+ *
+ *   1. Load the instruction at the current PC;
+ *   2. Execute instruction using the op_families decode table.
+ *   3. If the instruction is not a BRANCH, JAL, or JALR then
+ *      increase PC by 0x4 (i.e move to next instruction). Control flow
+ *      already updates the PC, so don't blow that away.
+ *
+ * The PC increment is done after executing the instruction since the
+ * PC may need to be present for certain instructions to execute properly.
+ */
 static int simple_core_exec_one(struct r5sim_machine *mach,
 				struct r5sim_core *core)
 {
@@ -498,40 +512,6 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 	return 0;
 }
 
-/*
- * Start execution on a simple_core core!
- *
- * Execution happens in the following order:
- *
- *   1. Load the instruction at the current PC;
- *   2. Execute instruction using the op_families decode table.
- *   3. If the instruction is not a BRANCH, JAL, or JALR then
- *      increase PC by 0x4 (i.e move to next instruction). Control flow
- *      already updates the PC, so don't blow that away.
- *
- * This sequence is executed, in a loop, by simple_core_exec_one().
- * The PC increment is done after executing the instruction since the
- * PC may need to be present for certain instructions to execute properly.
- *
- * When simple_core_exec_one() returns non-zero, HALT the machine.
- */
-static void
-simple_core_exec(struct r5sim_machine *mach,
-		 struct r5sim_core *core,
-		 uint32_t pc)
-{
-	core->pc = pc;
-
-	r5sim_info("Execution begins @ 0x%08x\n", pc);
-
-	while (simple_core_exec_one(mach, core) == 0)
-		;
-
-	r5sim_info("HALT.\n");
-
-	return;
-}
-
 struct r5sim_core *
 r5sim_simple_core_instance(struct r5sim_machine *mach)
 {
@@ -542,9 +522,9 @@ r5sim_simple_core_instance(struct r5sim_machine *mach)
 
 	memset(core, 0, sizeof(*core));
 
-	core->exec = simple_core_exec;
-	core->mach = mach;
-	core->name = "simple-core-r5";
+	core->exec_one = simple_core_exec_one;
+	core->mach     = mach;
+	core->name     = "simple-core-r5";
 
 	return core;
 }

@@ -6,6 +6,46 @@
 #include <r5sim/env.h>
 #include <r5sim/core.h>
 
+/*
+ * Start execution on a RSIC-V core!
+ *
+ * When core->exec_one() returns non-zero, HALT the machine.
+ */
+void
+r5sim_core_exec(struct r5sim_machine *mach,
+		struct r5sim_core *core,
+		uint32_t pc)
+{
+	core->pc = pc;
+
+	r5sim_info("Execution begins @ 0x%08x\n", pc);
+
+	while (core->exec_one(mach, core) == 0)
+		;
+
+	r5sim_info("HALT.\n");
+
+	return;
+}
+
+void
+r5sim_core_describe(struct r5sim_core *core)
+{
+	int i;
+
+	r5sim_info("Core: %s\n", core->name);
+	r5sim_info(" PC: 0x%08x\n", core->pc);
+
+	for (i = 0; i < 32; i += 4) {
+		r5sim_info("%3s: 0x%08x  %3s: 0x%08x  %3s: 0x%08x  %3s: 0x%08x\n",
+			   r5sim_reg_to_str(i + 0), core->reg_file[i + 0],
+			   r5sim_reg_to_str(i + 1), core->reg_file[i + 1],
+			   r5sim_reg_to_str(i + 2), core->reg_file[i + 2],
+			   r5sim_reg_to_str(i + 3), core->reg_file[i + 3]);
+	}
+}
+
+
 static const char *reg_abi_names[32] = {
 	" z", /* 0 */
 	"ra",
@@ -192,21 +232,4 @@ r5sim_branch_func3_to_str(uint32_t func3)
 	}
 
 	return "ERR";
-}
-
-void
-r5sim_core_describe(struct r5sim_core *core)
-{
-	int i;
-
-	r5sim_info("Core: %s\n", core->name);
-	r5sim_info(" PC: 0x%08x\n", core->pc);
-
-	for (i = 0; i < 32; i += 4) {
-		r5sim_info("%3s: 0x%08x  %3s: 0x%08x  %3s: 0x%08x  %3s: 0x%08x\n",
-			   r5sim_reg_to_str(i + 0), core->reg_file[i + 0],
-			   r5sim_reg_to_str(i + 1), core->reg_file[i + 1],
-			   r5sim_reg_to_str(i + 2), core->reg_file[i + 2],
-			   r5sim_reg_to_str(i + 3), core->reg_file[i + 3]);
-	}
 }

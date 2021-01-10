@@ -388,7 +388,7 @@ r5sim_machine_boot(struct r5sim_machine *mach)
 	 * We assume that the brom has been loaded. The starting PC is address
 	 * 0x0 of the bootrom.
 	 */
-	mach->core->exec(mach, mach->core, mach->brom_base);
+	r5sim_core_exec(mach, mach->core, mach->brom_base);
 }
 
 void

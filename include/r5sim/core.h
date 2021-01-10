@@ -24,11 +24,10 @@ struct r5sim_core {
 	struct r5sim_machine *mach;
 
 	/*
-	 * Begin execution of this core at the specified start_addr.
+	 * Ask the core to execute _one_ instruction.
 	 */
-	void (*exec)(struct r5sim_machine *mach,
-		     struct r5sim_core *core,
-		     uint32_t start_addr);
+	int (*exec_one)(struct r5sim_machine *mach,
+			struct r5sim_core *core);
 };
 
 static inline void
@@ -51,6 +50,11 @@ __get_reg(struct r5sim_core *core, uint32_t reg)
 
 	return core->reg_file[reg];
 }
+
+void
+r5sim_core_exec(struct r5sim_machine *mach,
+		struct r5sim_core *core,
+		uint32_t pc);
 
 const char *
 r5sim_reg_to_abi_str(uint32_t reg);
