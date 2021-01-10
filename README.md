@@ -9,7 +9,7 @@ This is enough to run some simple code BROM esque code. See the brom directory!
 # Dependencies and Requirements
 
 To run this you'll need a GCC host compiler, a RISC-V cross compiler and
-GNU make. At least on Ubuntu these are enough to get:
+GNU make. At least on Ubuntu these are easy enough to get:
 
     $ sudo apt-get install gcc
     $ sudo apt-get install gcc-riscv64-linux-gnu
@@ -19,7 +19,7 @@ To build just a simple `make` should be sufficient.
 
 # Run It
 
-To run the basic build do the following:
+To run the default build do the following:
 
     $ bin/r5sim -b bin/brom
 

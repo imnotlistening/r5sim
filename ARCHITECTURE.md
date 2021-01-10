@@ -42,16 +42,16 @@ to zero.
 ## Endianness
 
 Conveniently x86_64 (the typical host arch) and RISC-V share the same little
-endianness. As such there's really not much done here.
+endianness. As such there's really not much to worry about here - for now.
 
 # Memory Model
 
 The memory model provided by default in `r5sim` is essentially a strongly
 ordered, no cache model. That is every load and store is completely coherent
 with one another - including accesses to IO memory. Therefore the fence
-instructions (i.e barriers) are noops in the simple core although this
-probably should be modeled by the machine at some point. Nor is there any
-SMP.
+instructions (i.e barriers) are noops in the simple core; This could be
+modeled by the machine at some point, as an interesting testing mechanism.
+Also, there is no SMP for now.
 
 ## BROM
 
