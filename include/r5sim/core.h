@@ -31,6 +31,27 @@ struct r5sim_core {
 		     uint32_t start_addr);
 };
 
+static inline void
+__set_reg(struct r5sim_core *core,
+	  uint32_t reg, uint32_t val)
+{
+	r5sim_assert(reg < 32);
+
+	/* Silently drop writes to x0 (zero). */
+	if (reg == 0)
+		return;
+
+	core->reg_file[reg] = val;
+}
+
+static inline uint32_t
+__get_reg(struct r5sim_core *core, uint32_t reg)
+{
+	r5sim_assert(reg < 32);
+
+	return core->reg_file[reg];
+}
+
 const char *
 r5sim_reg_to_abi_str(uint32_t reg);
 const char *

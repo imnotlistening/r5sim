@@ -30,27 +30,6 @@ simple_core_inst_decode_err(const r5_inst *__inst)
 	r5sim_err("Failed to decode instruction: 0x%08x\n", *inst);
 }
 
-static void
-__set_reg(struct r5sim_core *core,
-	  uint32_t reg, uint32_t val)
-{
-	r5sim_assert(reg < 32);
-
-	/* Silently drop writes to x0 (zero). */
-	if (reg == 0)
-		return;
-
-	core->reg_file[reg] = val;
-}
-
-static uint32_t
-__get_reg(struct r5sim_core *core, uint32_t reg)
-{
-	r5sim_assert(reg < 32);
-
-	return core->reg_file[reg];
-}
-
 static int
 exec_misc_mem(struct r5sim_machine *mach,
 	      struct r5sim_core *core,
