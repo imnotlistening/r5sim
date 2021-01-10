@@ -17,10 +17,12 @@ static struct option app_opts[] = {
 	{ "quiet",		0, NULL, 'q' },
 	{ "bootrom",		1, NULL, 'b' },
 	{ "disk",		1, NULL, 'd' },
+	{ "itrace",		1, NULL, 'T' },
+
 	{ NULL,			0, NULL,  0  }
 };
 
-static const char *app_opts_str = "hvb:d:";
+static const char *app_opts_str = "hvb:d:T";
 
 static void r5sim_help(void) {
 
@@ -39,6 +41,7 @@ static void r5sim_help(void) {
 "  -b,--bootrom          Specify a bootrom to load/execute.\n"
 "  -d,--disk             Specify a file to treat as a disk. This will be loaded\n"
 "                        as a VDISK device.\n"
+"  -T,--itrace           Turn on instruction tracing; this is _very_ verbose.\n"
 "\n"
 "Execute the R5 simulator; BOOTROM is a binary blob of instructions/data\n"
 "that should be loaded into memory and executed. This will be the first\n"
@@ -82,6 +85,9 @@ r5sim_getopts(int argc, char * const argv[])
 			break;
 		case 'd':
 			app_args.disk_file = optarg;
+			break;
+		case 'T':
+			app_args.itrace = 1;
 			break;
 		case '?':
 			app_args.help = 1;

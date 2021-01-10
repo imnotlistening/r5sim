@@ -31,6 +31,21 @@ struct r5sim_core {
 		     uint32_t start_addr);
 };
 
+const char *
+r5sim_reg_to_abi_str(uint32_t reg);
+const char *
+r5sim_reg_to_str(uint32_t reg);
+const char *
+r5sim_load_func3_to_str(uint32_t func3);
+const char *
+r5sim_store_func3_to_str(uint32_t func3);
+const char *
+r5sim_op_imm_func3_to_str(uint32_t func3);
+const char *
+r5sim_op_func3_to_str(uint32_t func3, uint32_t func7);
+const char *
+r5sim_branch_func3_to_str(uint32_t func3);
+
 void
 r5sim_core_describe(struct r5sim_core *core);
 

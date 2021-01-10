@@ -10,7 +10,6 @@ enum r5sim_log_level {
 	WARN,
 	INFO,
 	DEBUG,
-	TRACE,
 };
 
 #define r5sim_err(fmt, args...)						\
@@ -25,14 +24,21 @@ enum r5sim_log_level {
 #define r5sim_dbg(fmt, args...)						\
 	__r5sim_log_print(DEBUG, __FILE__, __LINE__, fmt, ##args)
 
-#define r5sim_trace(fmt, args...)					\
-	__r5sim_log_print(TRACE, __FILE__, __LINE__, fmt, ##args)
-
 __attribute__((format (printf, 4, 5)))
 void
 __r5sim_log_print(enum r5sim_log_level lvl,
 		  const char *file,
 		  int line,
 		  const char *fmt, ...);
+
+/*
+ * Separate from the rest of the logging - itrac'ing is _very_ verbose.
+ */
+#define r5sim_itrace(fmt, args...)					\
+	__r5sim_itrace_print(fmt, ##args)
+
+__attribute__((format (printf, 1, 2)))
+void
+__r5sim_itrace_print(const char *fmt, ...);
 
 #endif

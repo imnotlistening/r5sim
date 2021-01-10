@@ -105,6 +105,12 @@ exec_load(struct r5sim_machine *mach,
 		return -1;
 	}
 
+	r5sim_itrace("%-5s @ 0x%08x [imm=0x%x] rs=%s\n",
+		     r5sim_load_func3_to_str(inst->func3),
+		     paddr_src,
+		     sign_extend(inst->imm_11_0, 11),
+		     r5sim_reg_to_str(inst->rs1));
+
 	return 0;
 }
 
@@ -137,6 +143,13 @@ exec_store(struct r5sim_machine *mach,
 		simple_core_inst_decode_err(__inst);
 		return -1;
 	}
+
+	r5sim_itrace("%-5s @ 0x%08x [imm=0x%x] rs=%-3s rd=%-3s\n",
+		     r5sim_store_func3_to_str(inst->func3),
+		     paddr_dst,
+		     imm,
+		     r5sim_reg_to_str(inst->rs1),
+		     r5sim_reg_to_str(inst->rs2));
 
 	return 0;
 }
@@ -192,6 +205,10 @@ exec_op_imm(struct r5sim_machine *mach,
 		break;
 	}
 
+	r5sim_itrace("%-5s %-3s [imm=0x%x]\n",
+		     r5sim_op_imm_func3_to_str(inst->func3),
+		     r5sim_reg_to_str(inst->rs1),
+		     imm);
 	return 0;
 }
 
@@ -257,6 +274,12 @@ exec_op(struct r5sim_machine *mach,
 		break;
 	}
 
+	r5sim_itrace("%-5s %-3s <- %-3s op %-3s\n",
+		     r5sim_op_func3_to_str(inst->func3, inst->func7),
+		     r5sim_reg_to_str(inst->rd),
+		     r5sim_reg_to_str(inst->rs1),
+		     r5sim_reg_to_str(inst->rs2));
+
 	return 0;
 }
 
@@ -269,7 +292,6 @@ exec_jal(struct r5sim_machine *mach,
 	uint32_t lr = core->pc + 4;
 	uint32_t offset;
 
-	r5sim_trace("  __ JAL:  lr=%-2d [0x%08x]\n", inst->rd, lr);
 	__set_reg(core, inst->rd, lr);
 
 	offset = (inst->imm_20    << 20) |
@@ -279,7 +301,8 @@ exec_jal(struct r5sim_machine *mach,
 
 	core->pc += sign_extend(offset, 20);
 
-	r5sim_trace("          New PC: 0x%08x\n", core->pc);
+	r5sim_itrace("LR    %-3s [0x%08x] New PC=0x%08x # imm=0x%x\n",
+		     r5sim_reg_to_str(inst->rd), lr, core->pc, offset);
 
 	return 0;
 }
@@ -292,22 +315,17 @@ exec_jalr(struct r5sim_machine *mach,
 	const r5_inst_i *inst = (const r5_inst_i *)__inst;
 	uint32_t lr = core->pc + 4;
 
-	r5sim_trace("  __ JALR: rd=%-2d         rs=%d\n", inst->rd, inst->rs1);
-	r5sim_trace("           rd=0x%08x rs=0x%08x\n",
-		   __get_reg(core, inst->rd),
-		   __get_reg(core, inst->rs1));
-	r5sim_trace("          imm=%d (0x%x)\n",
-		   sign_extend(inst->imm_11_0, 11),
-		   sign_extend(inst->imm_11_0, 11));
-	r5sim_trace("          LR=0x%x\n", lr);
-
 	/* Set link register. */
 	__set_reg(core, inst->rd, lr);
 
 	core->pc = (__get_reg(core, inst->rs1) +
 		    sign_extend(inst->imm_11_0, 11)) & ~0x1;
 
-	r5sim_trace("          New PC: 0x%08x\n", core->pc);
+	r5sim_itrace("LR    %-3s [0x%08x] New PC=%08x # rs=%-3s imm=%x\n",
+		     r5sim_reg_to_str(inst->rd), lr,
+		     core->pc,
+		     r5sim_reg_to_str(inst->rs1),
+		     sign_extend(inst->imm_11_0, 11) & ~0x1);
 
 	return 0;
 }
@@ -350,21 +368,29 @@ exec_branch(struct r5sim_machine *mach,
 	}
 
 	/*
-	 * If we don't take the branch increment the PC to the next
-	 * instruction and we are done.
+	 * If we take the branch increment we are just adding the sign
+	 * extended immediate to get to the new PC. However, if we don't
+	 * take the branch, remember to increment the PC to the next
+	 * instruction!
 	 */
-	if (!take_branch) {
+	if (take_branch) {
+		offset = (inst->imm_12   << 12) |
+			 (inst->imm_11   << 11) |
+			 (inst->imm_10_5 << 5) |
+			 (inst->imm_4_1  << 1);
+
+		core->pc += sign_extend(offset, 12);
+	} else {
 		core->pc += 4;
-		return 0;
 	}
 
-	/* Otherwise branch. */
-	offset = (inst->imm_12    << 12) |
-		 (inst->imm_11    << 11) |
-		 (inst->imm_10_5  << 5) |
-		 (inst->imm_4_1  << 1);
-
-	core->pc += sign_extend(offset, 12);
+	r5sim_itrace("%-5s %-3s [0x%08x] vs %-3s [0x%08x]; New PC=%08x [%-4s] # imm=%x\n",
+		     r5sim_branch_func3_to_str(inst->func3),
+		     r5sim_reg_to_str(inst->rs1), rs1,
+		     r5sim_reg_to_str(inst->rs2), rs2,
+		     core->pc,
+		     take_branch ? "TAKE" : "SKIP",
+		     offset);
 
 	return 0;
 }
@@ -380,8 +406,12 @@ exec_auipc(struct r5sim_machine *mach,
 	__set_reg(core, inst->rd,
 		  (*inst_u32 & 0xfffff000) + core->pc);
 
-	return 0;
+	r5sim_itrace("AIUPC %-3s <- 0x%08x + 0x%08x",
+		     r5sim_reg_to_str(inst->rd),
+		     core->pc,
+		     (*inst_u32 & 0xfffff000));
 
+	return 0;
 }
 
 static int
@@ -393,6 +423,10 @@ exec_lui(struct r5sim_machine *mach,
 	uint32_t *inst_u32 = (uint32_t *)__inst;
 
 	__set_reg(core, inst->rd, *inst_u32 & 0xfffff000);
+
+	r5sim_itrace("LUI   %-3s <- 0x%08x",
+		     r5sim_reg_to_str(inst->rd),
+		     *inst_u32 & 0xfffff000);
 
 	return 0;
 }
@@ -457,9 +491,9 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 	fam = simple_core_opcode_fam(inst);
 	op_type = (inst->opcode & 0x7c) >> 2;
 
-	r5sim_trace("PC 0x%08x | inst=0x%08x\n", core->pc, inst_mem);
-	r5sim_trace("  OP code: %-3d fam=%-8s (%d)\n",
-		    op_type, fam->op_name, op_type);
+	r5sim_itrace("PC 0x%08x i=0x%08x op=%-3d %-8s | ",
+		     core->pc, inst_mem,
+		     op_type, fam->op_name);
 
 	if (fam->op_name == NULL || fam->op_exec == NULL) {
 		simple_core_inst_decode_err(inst);

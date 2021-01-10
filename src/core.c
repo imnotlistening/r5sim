@@ -76,14 +76,122 @@ static const char *reg_names[32] = {
 	"x31",
 };
 
-const char *r5sim_reg_to_abi_str(uint32_t reg)
+const char *
+r5sim_reg_to_abi_str(uint32_t reg)
 {
 	return reg_abi_names[reg];
 }
 
-const char *r5sim_reg_to_str(uint32_t reg)
+const char *
+r5sim_reg_to_str(uint32_t reg)
 {
 	return reg_names[reg];
+}
+
+const char *
+r5sim_load_func3_to_str(uint32_t func3)
+{
+	switch (func3) {
+	case 0x0: /* LB */
+		return "LB";
+	case 0x1: /* LH */
+		return "LH";
+	case 0x2: /* LW */
+		return "LW";
+	case 0x4: /* LBU */
+		return "LBU";
+	case 0x5: /* LHU */
+		return "LHU";
+	}
+
+	return "ERR";
+};
+
+const char *
+r5sim_store_func3_to_str(uint32_t func3)
+{
+	switch (func3) {
+	case 0x0: /* SB */
+		return "LB";
+	case 0x1: /* SH */
+		return "LH";
+	case 0x2: /* SW */
+		return "LW";
+	}
+
+	return "ERR";
+}
+
+const char *
+r5sim_op_imm_func3_to_str(uint32_t func3)
+{
+	switch (func3) {
+	case 0x0: /* ADDI */
+		return "ADDI";
+	case 0x1: /* SLLI */
+		return "SLLI";
+	case 0x2: /* SLTI */
+		return "SLTI";
+	case 0x3: /* SLTIU */
+		return "SLTIUI";
+	case 0x4: /* XORI */
+		return "XORI";
+	case 0x5: /* SRLI, SRAI */
+		return "SRLI";
+	case 0x6: /* ORI */
+		return "ORI";
+	case 0x7: /* ANDI */
+		return "ANDI";
+	}
+
+	return "ERR";
+}
+
+const char *
+r5sim_op_func3_to_str(uint32_t func3, uint32_t func7)
+{
+	switch (func3) {
+	case 0x0: /* ADD, SUB */
+		return (func7 & (0x1 << 5)) ? "SUB" : "ADD";
+	case 0x1: /* SLL */
+		return "SLL";
+	case 0x2: /* SLT */
+		return "SLT";
+	case 0x3: /* SLTU */
+		return "SLTU";
+	case 0x4: /* XOR */
+		return "XOR";
+	case 0x5: /* SRL, SRA */
+		return "SRA?";
+	case 0x6: /* OR */
+		return "OR";
+	case 0x7: /* AND */
+		return "AND";
+	}
+
+	return "ERR";
+
+}
+
+const char *
+r5sim_branch_func3_to_str(uint32_t func3)
+{
+	switch (func3) {
+	case 0x0: /* BEQ */
+		return "BEQ";
+	case 0x1: /* BNE */
+		return "BNE";
+	case 0x4: /* BLT */
+		return "BLT";
+	case 0x5: /* BGE */
+		return "BGR";
+	case 0x6: /* BLTU */
+		return "BLTU";
+	case 0x7: /* BGEU */
+		return "BGEU";
+	}
+
+	return "ERR";
 }
 
 void

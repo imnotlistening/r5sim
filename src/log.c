@@ -47,3 +47,18 @@ __r5sim_log_print(enum r5sim_log_level lvl,
 		level_to_str(lvl),
 		file, line, buf);
 }
+
+__attribute__((format (printf, 1, 2)))
+void
+__r5sim_itrace_print(const char *fmt, ...)
+{
+	struct r5sim_app_args *app = r5sim_app_get_args();
+	va_list args;
+
+	if (!app->itrace)
+		return;
+
+	va_start(args, fmt);
+	(void) vprintf(fmt, args);
+	va_end(args);
+}
