@@ -26,10 +26,13 @@ typedef void (*blcall)(void);
 #define readl(addr)		*((uint32_t *)(addr))
 #define writel(addr, val)	*((uint32_t *)(addr)) = (uint32_t)(val)
 
+/*
+ * For now just sit in an infinite loop.
+ */
 #define assert(cond)							\
 	do {								\
 		if (!cond) {						\
-			__attribute__((unused)) int __x = readl(0x0);	\
+			while (1);					\
 		}							\
 	} while (0)
 
