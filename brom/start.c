@@ -71,11 +71,18 @@ load_disk_page(uint32_t dest, uint32_t offset)
 	writel(VDISK_BASE + VDISK_DRAM_ADDR,  (uint32_t)dest);
 	writel(VDISK_BASE + VDISK_PAGE_START, offset);
 	writel(VDISK_BASE + VDISK_PAGES,      1);
+	writel(VDISK_BASE + VDISK_OP,         VDISK_OP_COPY_TO_DRAM);
 
 	/*
 	 * Execute.
 	 */
-	writel(VDISK_BASE + VDISK_OP, VDISK_OP_COPY_TO_DRAM);
+	writel(VDISK_BASE + VDISK_EXEC, 1);
+
+	/*
+	 * Poll till done.
+	 */
+	while (readl(VDISK_BASE + VDISK_BUSY))
+		;
 }
 
 /*

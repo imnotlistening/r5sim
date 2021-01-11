@@ -18,6 +18,7 @@
 #include <r5sim/env.h>
 #include <r5sim/iodev.h>
 #include <r5sim/vdisk.h>
+#include <r5sim/machine.h>
 
 #include <r5sim/hw/vdisk.h>
 
@@ -31,6 +32,27 @@ struct virt_disk_priv {
 
 	uint32_t dev_state[VDISK_MAX_REG >> 2];
 };
+
+static const char *
+vdisk_reg_to_str(uint32_t reg)
+{
+	static const char *str_reg[] = {
+		[VDISK_PRESENT]		= "VDISK_PRESENT",
+		[VDISK_PAGE_SIZE]	= "VDISK_PAGE_SIZE",
+		[VDISK_SIZE_LO]		= "VDISK_LO",
+		[VDISK_SIZE_HI]		= "VDISK_HI",
+		[VDISK_DRAM_ADDR]	= "VDISK_DRAM_ADDR",
+		[VDISK_PAGE_START]	= "VDISK_START",
+		[VDISK_PAGES]		= "VDISK_PAGES",
+		[VDISK_OP]		= "VDISK_OP",
+		[VDISK_EXEC]		= "VDISK_EXEC",
+		[VDISK_BUSY]		= "VDISK_BUSY",
+	};
+
+	r5sim_assert(reg <= VDISK_MAX_REG);
+
+	return str_reg[reg];
+}
 
 /*
  * Set a state register for the device.
@@ -59,7 +81,8 @@ static uint32_t
 virt_disk_readl(struct r5sim_iodev *iodev, uint32_t offs)
 
 {
-	vdisk_dbg("LOAD  @ r=0x%02x\n", offs);
+	vdisk_dbg("LOAD  @ %s\n",
+		  vdisk_reg_to_str(offs));
 
 	if (offs >= VDISK_MAX_REG)
 		return 0x0;
@@ -68,15 +91,68 @@ virt_disk_readl(struct r5sim_iodev *iodev, uint32_t offs)
 }
 
 static void
+virt_disk_exec_op(struct r5sim_iodev *iodev)
+{
+	struct virt_disk_priv *priv = iodev->priv;
+	struct r5sim_machine *mach = iodev->mach;
+
+	uint32_t dram_addr  = __vdisk_read_state(priv, VDISK_DRAM_ADDR);
+	uint32_t page_start = __vdisk_read_state(priv, VDISK_PAGE_START);
+	uint32_t pages      = __vdisk_read_state(priv, VDISK_PAGES);
+	uint32_t op         = __vdisk_read_state(priv, VDISK_OP);
+
+	if ((op & VDISK_OP_COPY_TO_DRAM) == 0 &&
+	    (op & VDISK_OP_COPY_TO_DISK) == 0) {
+		vdisk_dbg("noop.\n");
+		return;
+	}
+
+	vdisk_dbg("op: %u\n", op);
+	vdisk_dbg("  DRAM addr:   0x%08x\n", dram_addr);
+	vdisk_dbg("  Page offset: %u\n", page_start);
+	vdisk_dbg("  Pages:       %u\n", pages);
+
+	if (op & VDISK_OP_COPY_TO_DRAM)
+		memcpy(mach->memory + (dram_addr - mach->memory_base),
+		       priv->mmap + page_start * KB(4),
+		       pages * KB(4));
+	else
+		memcpy(priv->mmap + page_start * KB(4),
+		       mach->memory + (dram_addr - mach->memory_base),
+		       pages * KB(4));
+}
+
+static void
 virt_disk_writel(struct r5sim_iodev *iodev,
 		 uint32_t offs, uint32_t val)
 {
-	vdisk_dbg("STORE @ r=0x%02x v=0x%08x\n", offs, val);
+	vdisk_dbg("STORE @ %-17s v=0x%08x\n",
+		  vdisk_reg_to_str(offs), val);
 
-	if (offs >= VDISK_MAX_REG)
+	switch (offs) {
+		/*
+		 * Some registers are just direct write-throughs.
+		 * These are easy: just store the value.
+		 */
+	case VDISK_DRAM_ADDR:
+	case VDISK_PAGE_START:
+	case VDISK_PAGES:
+	case VDISK_OP:
+		__vdisk_set_state(iodev->priv, offs, val);
 		return;
 
-	__vdisk_set_state(iodev->priv, offs, val);
+		/*
+		 * We also have the exec op register to execute a disk
+		 * operation.
+		 */
+	case VDISK_EXEC:
+		virt_disk_exec_op(iodev);
+		return;
+
+	default:
+		vdisk_dbg("  Invalid WRITE.");
+		return;
+	}
 }
 
 static int

@@ -50,7 +50,7 @@ __load_bytes(uint8_t *mem, uint32_t paddr, uint32_t bytes)
  */
 static void
 __write_bytes(uint8_t *mem, uint32_t paddr,
-			      uint32_t val, uint32_t bytes)
+	      uint32_t val, uint32_t bytes)
 {
 	r5sim_assert(bytes && bytes <= sizeof(val));
 
