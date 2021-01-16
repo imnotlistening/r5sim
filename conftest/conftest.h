@@ -37,16 +37,28 @@ struct ct_test {
 #define readl(addr)		*((uint32_t *)(addr))
 #define writel(addr, val)	*((uint32_t *)(addr)) = (uint32_t)(val)
 
+/* Compiler barrier. */
+#define barrier()		asm volatile("": : :"memory")
+
 __attribute__((format (printf, 1, 2)))
 int
 printf(const char *fmt, ...);
 
+/*
+ * Defined in conftest.S
+ */
+uint32_t
+ct_rdcycle(void);
+uint32_t
+ct_rdinstret(void);
 
 /*
  * Tests.
  */
 const struct ct_test *
 ct_env(void);
+const struct ct_test *
+ct_system(void);
 const struct ct_test *
 ct_load_store(void);
 

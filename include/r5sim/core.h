@@ -11,11 +11,38 @@
 
 struct r5sim_machine;
 
+struct r5sim_csr {
+	uint32_t	value;
+	uint32_t	flags;
+#define CSR_PRESENT	0x1
+#define CSR_READ	0x2
+#define CSR_WRITE	0x4
+};
+
+#define CSR_CYCLE	0xC00
+#define CSR_TIME	0xC01
+#define CSR_INSTRET	0xC02
+#define CSR_CYCLEH	0xC80
+#define CSR_TIMEH	0xC81
+#define CSR_INSTRETH	0xC82
+
+
+#define r5sim_core_add_csr(core, __csr, __value, __flags)	\
+	do {							\
+		struct r5sim_csr csr = {			\
+			.value = __value,			\
+			.flags = __flags | CSR_PRESENT,		\
+		};						\
+		__r5sim_core_add_csr(core, &csr, __csr);	\
+	} while (0)
+
 struct r5sim_core {
 	const char           *name;
 
 	uint32_t              reg_file[32];
 	uint32_t              pc;
+
+	struct r5sim_csr      csr_file[4096];
 
 	/*
 	 * Machine this core belongs to; relevant for handling IO, DRAM
@@ -51,6 +78,43 @@ __get_reg(struct r5sim_core *core, uint32_t reg)
 	return core->reg_file[reg];
 }
 
+static inline uint32_t
+__raw_csr_read(struct r5sim_csr *csr)
+{
+	return csr->value;
+}
+
+static inline void
+__raw_csr_write(struct r5sim_csr *csr, uint32_t value)
+{
+	csr->value = value;
+}
+
+static inline void
+__raw_csr_set_mask(struct r5sim_csr *csr, uint32_t value)
+{
+	csr->value |= value;
+}
+static inline void
+__raw_csr_clear_mask(struct r5sim_csr *csr, uint32_t value)
+{
+	csr->value &= ~value;
+}
+
+void
+__csr_w(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr);
+void
+__csr_s(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr);
+void
+__csr_c(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr);
+
+void
+__r5sim_core_add_csr(struct r5sim_core *core,
+		     struct r5sim_csr *csr_reg,
+		     uint32_t csr);
+void
+r5sim_core_default_csrs(struct r5sim_core *core);
+
 void
 r5sim_core_exec(struct r5sim_machine *mach,
 		struct r5sim_core *core,
@@ -70,6 +134,8 @@ const char *
 r5sim_op_func3_to_str(uint32_t func3, uint32_t func7);
 const char *
 r5sim_branch_func3_to_str(uint32_t func3);
+const char *
+r5sim_system_func3_to_str(uint32_t func3);
 
 void
 r5sim_core_describe(struct r5sim_core *core);

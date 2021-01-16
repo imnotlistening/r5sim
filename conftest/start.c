@@ -7,6 +7,7 @@
 
 static ct_test_list_fn submodules[] = {
 	ct_env,
+	ct_system,
 	ct_load_store,
 	NULL
 };

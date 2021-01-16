@@ -38,3 +38,16 @@ _start:
 	lw	t1, 0(t0)
 	.long	0xDEAD0000
 	j	.loop
+
+.section	.text
+
+.globl ct_rdcycle
+.globl ct_rdinstret
+
+ct_rdcycle:
+	rdcycle		a0
+	ret
+
+ct_rdinstret:
+	rdinstret	a0
+	ret

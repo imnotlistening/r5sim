@@ -2,9 +2,29 @@
  * Basic CPU core interfaces.
  */
 
+#include <stdlib.h>
+
 #include <r5sim/log.h>
 #include <r5sim/env.h>
 #include <r5sim/core.h>
+
+/*
+ * To keep things simple for now each cycle == 1 instruction. This could
+ * be changed in the future, but for now it seems like a viable enough
+ * approach.
+ */
+static void
+r5sim_core_incr(struct r5sim_core *core)
+{
+	core->csr_file[CSR_CYCLE].value += 1;
+	core->csr_file[CSR_INSTRET].value += 1;
+
+	/* Handle wrap: if value is 0, then it must have wrapped. */
+	if (!core->csr_file[CSR_CYCLE].value)
+		core->csr_file[CSR_CYCLEH].value += 1;
+	if (!core->csr_file[CSR_INSTRET].value)
+		core->csr_file[CSR_INSTRETH].value += 1;
+}
 
 /*
  * Start execution on a RSIC-V core!
@@ -21,11 +41,96 @@ r5sim_core_exec(struct r5sim_machine *mach,
 	r5sim_info("Execution begins @ 0x%08x\n", pc);
 
 	while (core->exec_one(mach, core) == 0)
-		;
+		r5sim_core_incr(core);
 
 	r5sim_info("HALT.\n");
 
 	return;
+}
+
+void
+__r5sim_core_add_csr(struct r5sim_core *core,
+		     struct r5sim_csr *csr_reg,
+		     uint32_t csr)
+{
+	r5sim_assert(csr < 4096);
+
+	core->csr_file[csr] = *csr_reg;
+}
+
+void
+r5sim_core_default_csrs(struct r5sim_core *core)
+{
+	r5sim_core_add_csr(core, CSR_CYCLE,	0x0, CSR_READ);
+	r5sim_core_add_csr(core, CSR_TIME,	0x0, CSR_READ);
+	r5sim_core_add_csr(core, CSR_INSTRET,	0x0, CSR_READ);
+	r5sim_core_add_csr(core, CSR_CYCLEH,	0x0, CSR_READ);
+	r5sim_core_add_csr(core, CSR_TIMEH,	0x0, CSR_READ);
+	r5sim_core_add_csr(core, CSR_INSTRET,	0x0, CSR_READ);
+}
+
+/*
+ * All CSR instuctions read the CSR into rd; it's really only after that
+ * the instructions have different effects.
+ *
+ * This will return NULL if the CSR is not implemented. Otherwise it
+ * returns the address of ther CSR struct in the CSR file.
+ */
+static struct r5sim_csr *
+__csr_always(struct r5sim_core *core, uint32_t rd, uint32_t csr)
+{
+	struct r5sim_csr *csr_reg;
+
+	r5sim_assert(csr < 4096);
+
+	csr_reg = &core->csr_file[csr];
+
+	if ((csr_reg->flags & CSR_PRESENT) == 0)
+		return NULL;
+
+	if ((csr_reg->flags & CSR_READ) != 0 && rd != 0)
+		__set_reg(core, rd, __raw_csr_read(csr_reg));
+
+	return csr_reg;
+}
+
+void
+__csr_w(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr)
+{
+	struct r5sim_csr *csr_reg;
+
+	csr_reg = __csr_always(core, rd, csr);
+	if (csr_reg == NULL)
+		return;
+
+	if ((csr_reg->flags & CSR_WRITE) != 0)
+		__raw_csr_write(csr_reg, value);
+}
+
+void
+__csr_s(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr)
+{
+	struct r5sim_csr *csr_reg;
+
+	csr_reg = __csr_always(core, rd, csr);
+	if (csr_reg == NULL)
+		return;
+
+	if ((csr_reg->flags & CSR_WRITE) != 0)
+		__raw_csr_set_mask(csr_reg, value);
+}
+
+void
+__csr_c(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr)
+{
+	struct r5sim_csr *csr_reg;
+
+	csr_reg = __csr_always(core, rd, csr);
+	if (csr_reg == NULL)
+		return;
+
+	if ((csr_reg->flags & CSR_WRITE) != 0)
+		__raw_csr_clear_mask(csr_reg, value);
 }
 
 void
@@ -47,73 +152,17 @@ r5sim_core_describe(struct r5sim_core *core)
 
 
 static const char *reg_abi_names[32] = {
-	" z", /* 0 */
-	"ra",
-	"sp",
-	"gp",
-	"tp",
-	"t0",
-	"t1",
-	"t2",
-	"fp", /* 8 */
-	"s1",
-	"a0",
-	"a1",
-	"a2",
-	"a3",
-	"a4",
-	"a5", /* 15 */
-	"a6",
-	"a7",
-	"s2",
-	"s3",
-	"s4",
-	"s5",
-	"s6",
-	"s7", /* 23 */
-	"s8",
-	"s9",
-	"s10",
-	"s11",
-	"t3",
-	"t4",
-	"t5",
-	"t6",
+	/* 0  */ " z",  "ra",  "sp",  "gp",  "tp",  "t0",  "t1",  "t2",
+	/* 8  */ "fp",  "s1",  "a0",  "a1",  "a2",  "a3",  "a4",  "a5",
+	/* 16 */ "a6",  "a7",  "s2",  "s3",  "s4",  "s5",  "s6",  "s7",
+	/* 24 */ "s8",  "s9",  "s10", "s11", "t3",  "t4",  "t5",  "t6",
 };
 
 static const char *reg_names[32] = {
-	"x0",
-	"x1",
-	"x2",
-	"x3",
-	"x4",
-	"x5",
-	"x6",
-	"x7",
-	"x8",
-	"x9",
-	"x10",
-	"x11",
-	"x12",
-	"x13",
-	"x14",
-	"x15",
-	"x16",
-	"x17",
-	"x18",
-	"x19",
-	"x20",
-	"x21",
-	"x22",
-	"x23",
-	"x24",
-	"x25",
-	"x26",
-	"x27",
-	"x28",
-	"x29",
-	"x30",
-	"x31",
+	/* 0  */ "x0",  "x1",  "x2",  "x3",  "x4",  "x5",  "x6",  "x7",
+	/* 8  */ "x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
+	/* 16 */ "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23",
+	/* 24 */ "x24", "x25", "x26", "x27", "x28", "x29", "x30", "x31",
 };
 
 const char *
@@ -229,6 +278,27 @@ r5sim_branch_func3_to_str(uint32_t func3)
 		return "BLTU";
 	case 0x7: /* BGEU */
 		return "BGEU";
+	}
+
+	return "ERR";
+}
+
+const char *
+r5sim_system_func3_to_str(uint32_t func3)
+{
+	switch (func3) {
+	case 0x1: /* CSRRW */
+		return "CSRRW";
+	case 0x2: /* CSRRS */
+		return "CSRRS";
+	case 0x3: /* CSRRC */
+		return "CSRRC";
+	case 0x5: /* CSRRWI */
+		return "CSRRWI";
+	case 0x6: /* CSRRSI */
+		return "CSRRSI";
+	case 0x7: /* CSRRCI */
+		return "CSRRCI";
 	}
 
 	return "ERR";

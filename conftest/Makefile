@@ -18,6 +18,7 @@ BINS      = conftest
 OBJS      = start.o print.o
 
 OBJS      += test_env.o \
+	     test_system.o \
 	     test_ldst.o
 
 .PHONY: all clean install

@@ -86,7 +86,7 @@ exec_load(struct r5sim_machine *mach,
 		return -1;
 	}
 
-	r5sim_itrace("%-5s @ 0x%08x [imm=0x%x] rs=%s\n",
+	r5sim_itrace("%-6s @ 0x%08x [imm=0x%x] rs=%s\n",
 		     r5sim_load_func3_to_str(inst->func3),
 		     paddr_src,
 		     sign_extend(inst->imm_11_0, 11),
@@ -125,7 +125,7 @@ exec_store(struct r5sim_machine *mach,
 		return -1;
 	}
 
-	r5sim_itrace("%-5s @ 0x%08x [imm=0x%x] rs=%-3s rd=%-3s\n",
+	r5sim_itrace("%-6s @ 0x%08x [imm=0x%x] rs=%-3s rd=%-3s\n",
 		     r5sim_store_func3_to_str(inst->func3),
 		     paddr_dst,
 		     imm,
@@ -186,7 +186,7 @@ exec_op_imm(struct r5sim_machine *mach,
 		break;
 	}
 
-	r5sim_itrace("%-5s %-3s [imm=0x%x]\n",
+	r5sim_itrace("%-6s %-3s [imm=0x%x]\n",
 		     r5sim_op_imm_func3_to_str(inst->func3),
 		     r5sim_reg_to_str(inst->rs1),
 		     imm);
@@ -255,7 +255,7 @@ exec_op(struct r5sim_machine *mach,
 		break;
 	}
 
-	r5sim_itrace("%-5s %-3s <- %-3s op %-3s\n",
+	r5sim_itrace("%-6s %-3s <- %-3s op %-3s\n",
 		     r5sim_op_func3_to_str(inst->func3, inst->func7),
 		     r5sim_reg_to_str(inst->rd),
 		     r5sim_reg_to_str(inst->rs1),
@@ -282,7 +282,7 @@ exec_jal(struct r5sim_machine *mach,
 
 	core->pc += sign_extend(offset, 20);
 
-	r5sim_itrace("LR    %-3s [0x%08x] New PC=0x%08x # imm=0x%x\n",
+	r5sim_itrace("LR     %-3s [0x%08x] New PC=0x%08x # imm=0x%x\n",
 		     r5sim_reg_to_str(inst->rd), lr, core->pc, offset);
 
 	return 0;
@@ -302,7 +302,7 @@ exec_jalr(struct r5sim_machine *mach,
 	core->pc = (__get_reg(core, inst->rs1) +
 		    sign_extend(inst->imm_11_0, 11)) & ~0x1;
 
-	r5sim_itrace("LR    %-3s [0x%08x] New PC=%08x # rs=%-3s imm=%x\n",
+	r5sim_itrace("LR     %-3s [0x%08x] New PC=%08x # rs=%-3s imm=%x\n",
 		     r5sim_reg_to_str(inst->rd), lr,
 		     core->pc,
 		     r5sim_reg_to_str(inst->rs1),
@@ -365,7 +365,7 @@ exec_branch(struct r5sim_machine *mach,
 		core->pc += 4;
 	}
 
-	r5sim_itrace("%-5s %-3s [0x%08x] vs %-3s [0x%08x]; New PC=%08x [%-4s] # imm=%x\n",
+	r5sim_itrace("%-6s %-3s [0x%08x] vs %-3s [0x%08x]; New PC=%08x [%-4s] # imm=%x\n",
 		     r5sim_branch_func3_to_str(inst->func3),
 		     r5sim_reg_to_str(inst->rs1), rs1,
 		     r5sim_reg_to_str(inst->rs2), rs2,
@@ -387,7 +387,7 @@ exec_auipc(struct r5sim_machine *mach,
 	__set_reg(core, inst->rd,
 		  (*inst_u32 & 0xfffff000) + core->pc);
 
-	r5sim_itrace("AIUPC %-3s <- 0x%08x + 0x%08x",
+	r5sim_itrace("AIUPC  %-3s <- 0x%08x + 0x%08x",
 		     r5sim_reg_to_str(inst->rd),
 		     core->pc,
 		     (*inst_u32 & 0xfffff000));
@@ -405,9 +405,51 @@ exec_lui(struct r5sim_machine *mach,
 
 	__set_reg(core, inst->rd, *inst_u32 & 0xfffff000);
 
-	r5sim_itrace("LUI   %-3s <- 0x%08x",
+	r5sim_itrace("LUI    %-3s <- 0x%08x",
 		     r5sim_reg_to_str(inst->rd),
 		     *inst_u32 & 0xfffff000);
+
+	return 0;
+}
+
+static int
+exec_system(struct r5sim_machine *mach,
+	    struct r5sim_core *core,
+	    const r5_inst *__inst)
+{
+	const r5_inst_i *inst = (const r5_inst_i *)__inst;
+	const uint32_t csr = inst->imm_11_0;
+
+	switch (inst->func3) {
+	case 0x1: /* CSRRW */
+		__csr_w(core, inst->rd, __get_reg(core, inst->rs1), csr);
+		break;
+	case 0x2: /* CSRRS */
+		__csr_s(core, inst->rd, __get_reg(core, inst->rs1), csr);
+		break;
+	case 0x3: /* CSRRC */
+		__csr_c(core, inst->rd, __get_reg(core, inst->rs1), csr);
+		break;
+	case 0x5: /* CSRRWI */
+		__csr_w(core, inst->rd, inst->rs1, csr);
+		break;
+	case 0x6: /* CSRRSI */
+		__csr_s(core, inst->rd, inst->rs1, csr);
+		break;
+	case 0x7: /* CSRRCI */
+		__csr_c(core, inst->rd, inst->rs1, csr);
+		break;
+	default:
+		simple_core_inst_decode_err(__inst);
+		return -1;
+	}
+
+	r5sim_itrace("%-6s   0x%3X rd=%-3s %s=%u",
+		     r5sim_system_func3_to_str(inst->func3),
+		     csr,
+		     r5sim_reg_to_str(inst->rd),
+		     inst->func3 >= 0x5 ? "imm" : "rs",
+		     inst->rs1);
 
 	return 0;
 }
@@ -445,7 +487,7 @@ static struct r5_op_family op_families[32] = {
 	[25] = R5_OP_FAMILY("JALR",     R5_OP_TYPE_I, exec_jalr, 0),
 	[26] = { 0 },
 	[27] = R5_OP_FAMILY("JAL",      R5_OP_TYPE_J, exec_jal, 0),
-	[28] = R5_OP_FAMILY("SYSTEM",   R5_OP_TYPE_I, NULL, 1),
+	[28] = R5_OP_FAMILY("SYSTEM",   R5_OP_TYPE_I, exec_system, 1),
 	[29] = { 0 },
 	[30] = { 0 },
 	[31] = { 0 }, /* --- */
@@ -525,6 +567,8 @@ r5sim_simple_core_instance(struct r5sim_machine *mach)
 	core->exec_one = simple_core_exec_one;
 	core->mach     = mach;
 	core->name     = "simple-core-r5";
+
+	r5sim_core_default_csrs(core);
 
 	return core;
 }
