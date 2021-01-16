@@ -86,7 +86,7 @@ load_disk_page(uint32_t dest, uint32_t offset)
 }
 
 /*
- * Load a bootloader in the first 4KB of the vdisk.
+ * Load a bootloader in the first 16KB of the vdisk.
  */
 static void
 load_bootloader(void)
@@ -101,7 +101,7 @@ load_bootloader(void)
 	offset = 0;
 	page = 0;
 
-	while (offset < 4096) {
+	while (offset < (16 << 10)) {
 		load_disk_page(dram_base + offset, page);
 		offset += vdisk_pgsz;
 		page += 1;
