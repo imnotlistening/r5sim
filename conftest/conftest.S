@@ -1,8 +1,8 @@
 /*
- * A super simple bootrom program for the default R5 core.
- *
- * The execution environment here is very limited. There is no writeable
- * stack or DRAM yet.
+ * This is the entrance for the "conformance" test for the simple-core R5.
+ * It's probably not, nor likely ever, to be a really good conformance test
+ * but it should hopefully prevent any crippling regressions from creeping
+ * into the simple-core.
  */
 
 .globl _start
@@ -12,11 +12,15 @@
 #define DRAM_STACK	0x50000000
 
 /*
- * The truly first code; this is loaded at BROM_BASE + 0x0. This is the
- * CPU boot vector.
+ * The bootrom loads 16Kb into the very bottom of DRAM from the
+ * start of the disk.
  *
- * Subsequent sections can be placed anywhere (within the BROM). Init enough
- * to call a special C routine.
+ * This section of code - .text.boot - is explicitly placed at offset 0x0
+ * in the in the output binary and will be the first code to execute.
+ *
+ * This sets up the basic C environment that the subsequent C code needs
+ * and jumps to start(), defined in start.c. If start() returns then we
+ * sit in an infinite loop waiting on the UART.
  */
 .section	.text.boot
 _start:
@@ -36,18 +40,30 @@ _start:
 	lui	t0,%hi(0x4000000)
 .loop:
 	lw	t1, 0(t0)
-	.long	0xDEAD0000
 	j	.loop
 
 .section	.text
 
-.globl ct_rdcycle
-.globl ct_rdinstret
 
+/*
+ * uint32_t ct_rdcycle(void)
+ *
+ * Reads and returns the cycle counter from the CYCLE CSR.
+ */
+.globl ct_rdcycle
 ct_rdcycle:
 	rdcycle		a0
 	ret
 
+/*
+ * uint32_t ct_rdinstret(void)
+ *
+ * Reads and returns the instret (instructions retired - i.e number of
+ * instructions fully executed) counter from the CYCLE CSR. instret and
+ * cycles both increment by 1 for each instruction on the simle core.
+ * There's no pipelining or anything like that.
+ */
+.globl ct_rdinstret
 ct_rdinstret:
 	rdinstret	a0
 	ret
