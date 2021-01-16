@@ -15,7 +15,7 @@ R5SIM_DIR = $(PWD)
 INSTALL   = $(R5SIM_DIR)/bin
 
 # Sub-directories to build.
-SUBDIRS   = src brom r5-tests conftest
+SUBDIRS   = src brom conftest
 
 # Export some environment variables for the sub-makefiles.
 export CC CFLAGS R5SIM_DIR INSTALL
