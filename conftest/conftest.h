@@ -30,6 +30,10 @@ struct ct_test {
 		.name = __name,			\
 	}
 
+struct ct_time {
+	uint32_t lo;
+	uint32_t hi;
+};
 
 /*
  * No need for barriers on the simple_core.
@@ -44,6 +48,11 @@ __attribute__((format (printf, 1, 2)))
 int
 printf(const char *fmt, ...);
 
+void
+ct_time_diff(struct ct_time *dst, struct ct_time *a, struct ct_time *b);
+void
+ct_ptime(struct ct_time *t, const char *str);
+
 /*
  * Defined in conftest.S
  */
@@ -51,6 +60,8 @@ uint32_t
 ct_rdcycle(void);
 uint32_t
 ct_rdinstret(void);
+void
+ct_rdtime(struct ct_time *time);
 
 /*
  * Tests.

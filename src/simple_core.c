@@ -568,7 +568,7 @@ r5sim_simple_core_instance(struct r5sim_machine *mach)
 	core->mach     = mach;
 	core->name     = "simple-core-r5";
 
-	r5sim_core_default_csrs(core);
+	r5sim_core_init_common(core);
 
 	return core;
 }

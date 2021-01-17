@@ -38,12 +38,37 @@ ct_run_test_submodule(ct_test_list_fn fn, uint32_t *pass, uint32_t *fail)
 	}
 }
 
+/*
+ * Compute a - b and store the result in dst.
+ */
+void
+ct_time_diff(struct ct_time *dst, struct ct_time *a, struct ct_time *b)
+{
+	dst->lo = a->lo - b->lo;
+	dst->hi = a->hi - b->hi;
+
+	if (a->lo < b->lo) {
+		dst->hi -= 1;
+		dst->lo = 0xffffffff - b->lo + a->lo + 1;
+	}
+}
+
+void ct_ptime(struct ct_time *t, const char *str)
+{
+	printf("%s {%u.%u}\n", str, t->hi, t->lo);
+}
+
 void
 start(void)
 {
 	uint32_t pass_total = 0, pass;
 	uint32_t fail_total = 0, fail;
 	ct_test_list_fn *submodule = submodules;
+	struct ct_time start, end, diff;
+	uint32_t cycles_start, cycles_end;
+
+	ct_rdtime(&start);
+	cycles_start = ct_rdcycle();
 
 	printf("Welcome to a super simple R5 conf test\n");
 
@@ -56,10 +81,18 @@ start(void)
 		submodule++;
 	}
 
+	cycles_end = ct_rdcycle();
+	ct_rdtime(&end);
+	ct_time_diff(&diff, &end, &start);
+
 	printf("\n\nTest results:\n");
 	printf("Passing tests: %u\n", pass_total);
 	printf("Failing tests: %u\n", fail_total);
 	printf("Total tests:   %u\n", pass_total + fail_total);
+	printf("\n\n");
+
+	printf("Cycles:          %u\n", cycles_end - cycles_start);
+	printf("Time taken (ns): %u:%u\n", diff.hi, diff.lo);
 
 	while (1);
 }

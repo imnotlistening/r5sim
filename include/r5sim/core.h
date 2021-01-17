@@ -5,11 +5,17 @@
 #ifndef __R5SIM_CORE_H__
 #define __R5SIM_CORE_H__
 
+#include <time.h>
 #include <stdint.h>
 
 #include <r5sim/isa.h>
 
 struct r5sim_machine;
+struct r5sim_core;
+struct r5sim_csr;
+
+typedef void (*r5sim_csr_fn)(struct r5sim_core *core,
+			     struct r5sim_csr *csr);
 
 struct r5sim_csr {
 	uint32_t	value;
@@ -17,6 +23,9 @@ struct r5sim_csr {
 #define CSR_PRESENT	0x1
 #define CSR_READ	0x2
 #define CSR_WRITE	0x4
+
+	r5sim_csr_fn	read_fn;
+	r5sim_csr_fn	write_fn;
 };
 
 #define CSR_CYCLE	0xC00
@@ -26,15 +35,26 @@ struct r5sim_csr {
 #define CSR_TIMEH	0xC81
 #define CSR_INSTRETH	0xC82
 
-
-#define r5sim_core_add_csr(core, __csr, __value, __flags)	\
-	do {							\
-		struct r5sim_csr csr = {			\
-			.value = __value,			\
-			.flags = __flags | CSR_PRESENT,		\
-		};						\
-		__r5sim_core_add_csr(core, &csr, __csr);	\
+#define r5sim_core_add_csr(core, __csr, __value, __flags)		\
+	do {								\
+		struct r5sim_csr csr = {				\
+			.value = __value,				\
+			.flags = __flags | CSR_PRESENT,			\
+		};							\
+		__r5sim_core_add_csr(core, &csr, __csr);		\
 	} while (0)
+
+#define r5sim_core_add_csr_fn(core, __csr, __value, __flags, rd, wr)	\
+	do {								\
+		struct r5sim_csr csr = {				\
+			.value = __value,				\
+			.flags = __flags | CSR_PRESENT,			\
+			.read_fn = rd,					\
+			.write_fn = wr,					\
+		};							\
+		__r5sim_core_add_csr(core, &csr, __csr);		\
+	} while (0)
+
 
 struct r5sim_core {
 	const char           *name;
@@ -43,6 +63,8 @@ struct r5sim_core {
 	uint32_t              pc;
 
 	struct r5sim_csr      csr_file[4096];
+
+	struct timespec	      start;
 
 	/*
 	 * Machine this core belongs to; relevant for handling IO, DRAM
@@ -112,8 +134,9 @@ void
 __r5sim_core_add_csr(struct r5sim_core *core,
 		     struct r5sim_csr *csr_reg,
 		     uint32_t csr);
+
 void
-r5sim_core_default_csrs(struct r5sim_core *core);
+r5sim_core_init_common(struct r5sim_core *core);
 
 void
 r5sim_core_exec(struct r5sim_machine *mach,

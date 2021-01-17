@@ -4,9 +4,44 @@
 
 #include <stdlib.h>
 
+#include <time.h>
+
 #include <r5sim/log.h>
 #include <r5sim/env.h>
 #include <r5sim/core.h>
+
+/*
+ * Timer callback so that the CSR timer function can get the host system
+ * time. This generates a time in nanoseconds which is stored into the
+ * TIME and TIMEH CSRs.
+ *
+ * The subsequent reads will then pull out this computed value from the
+ * CSR file.
+ */
+static void
+r5sim_csr_time(struct r5sim_core *core,
+	       struct r5sim_csr *csr)
+{
+	long nsecs;
+	time_t secs;
+	uint64_t delta_ns;
+	struct timespec now;
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+
+	nsecs = now.tv_nsec - core->start.tv_nsec;
+	secs = now.tv_sec - core->start.tv_sec;
+
+	if (nsecs < 0) {
+		secs = secs - 1;
+		nsecs += 1000000000;
+	}
+
+	delta_ns = secs * 1000000000 + nsecs;
+
+	__raw_csr_write(&core->csr_file[CSR_TIME], (uint32_t)delta_ns);
+	__raw_csr_write(&core->csr_file[CSR_TIMEH], (uint32_t)(delta_ns >> 32));
+}
 
 /*
  * To keep things simple for now each cycle == 1 instruction. This could
@@ -27,7 +62,7 @@ r5sim_core_incr(struct r5sim_core *core)
 }
 
 /*
- * Start execution on a RSIC-V core!
+ * Start execution on a RISC-V core!
  *
  * When core->exec_one() returns non-zero, HALT the machine.
  */
@@ -58,15 +93,24 @@ __r5sim_core_add_csr(struct r5sim_core *core,
 	core->csr_file[csr] = *csr_reg;
 }
 
-void
+static void
 r5sim_core_default_csrs(struct r5sim_core *core)
 {
 	r5sim_core_add_csr(core, CSR_CYCLE,	0x0, CSR_READ);
-	r5sim_core_add_csr(core, CSR_TIME,	0x0, CSR_READ);
 	r5sim_core_add_csr(core, CSR_INSTRET,	0x0, CSR_READ);
 	r5sim_core_add_csr(core, CSR_CYCLEH,	0x0, CSR_READ);
-	r5sim_core_add_csr(core, CSR_TIMEH,	0x0, CSR_READ);
 	r5sim_core_add_csr(core, CSR_INSTRET,	0x0, CSR_READ);
+
+	r5sim_core_add_csr_fn(core, CSR_TIME,	0x0, CSR_READ, r5sim_csr_time, NULL);
+	r5sim_core_add_csr_fn(core, CSR_TIMEH,	0x0, CSR_READ, r5sim_csr_time, NULL);
+}
+
+void
+r5sim_core_init_common(struct r5sim_core *core)
+{
+	r5sim_core_default_csrs(core);
+
+	clock_gettime(CLOCK_MONOTONIC_COARSE, &core->start);
 }
 
 /*
@@ -88,8 +132,11 @@ __csr_always(struct r5sim_core *core, uint32_t rd, uint32_t csr)
 	if ((csr_reg->flags & CSR_PRESENT) == 0)
 		return NULL;
 
-	if ((csr_reg->flags & CSR_READ) != 0 && rd != 0)
+	if ((csr_reg->flags & CSR_READ) != 0 && rd != 0) {
+		if (csr_reg->read_fn)
+			csr_reg->read_fn(core, csr_reg);
 		__set_reg(core, rd, __raw_csr_read(csr_reg));
+	}
 
 	return csr_reg;
 }
@@ -103,8 +150,11 @@ __csr_w(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr)
 	if (csr_reg == NULL)
 		return;
 
-	if ((csr_reg->flags & CSR_WRITE) != 0)
+	if ((csr_reg->flags & CSR_WRITE) != 0) {
+		if (csr_reg->write_fn)
+			csr_reg->write_fn(core, csr_reg);
 		__raw_csr_write(csr_reg, value);
+	}
 }
 
 void
@@ -116,8 +166,11 @@ __csr_s(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr)
 	if (csr_reg == NULL)
 		return;
 
-	if ((csr_reg->flags & CSR_WRITE) != 0)
+	if ((csr_reg->flags & CSR_WRITE) != 0) {
+		if (csr_reg->write_fn)
+			csr_reg->write_fn(core, csr_reg);
 		__raw_csr_set_mask(csr_reg, value);
+	}
 }
 
 void
@@ -129,8 +182,11 @@ __csr_c(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr)
 	if (csr_reg == NULL)
 		return;
 
-	if ((csr_reg->flags & CSR_WRITE) != 0)
+	if ((csr_reg->flags & CSR_WRITE) != 0) {
+		if (csr_reg->write_fn)
+			csr_reg->write_fn(core, csr_reg);
 		__raw_csr_clear_mask(csr_reg, value);
+	}
 }
 
 void
@@ -149,7 +205,6 @@ r5sim_core_describe(struct r5sim_core *core)
 			   r5sim_reg_to_str(i + 3), core->reg_file[i + 3]);
 	}
 }
-
 
 static const char *reg_abi_names[32] = {
 	/* 0  */ " z",  "ra",  "sp",  "gp",  "tp",  "t0",  "t1",  "t2",

@@ -44,7 +44,6 @@ _start:
 
 .section	.text
 
-
 /*
  * uint32_t ct_rdcycle(void)
  *
@@ -66,4 +65,28 @@ ct_rdcycle:
 .globl ct_rdinstret
 ct_rdinstret:
 	rdinstret	a0
+	ret
+
+/*
+ * void ct_rdtime(struct ct_time *time)
+ *
+ * Reads the core time stamp counter and places the results into *lo and
+ * *hi.
+ */
+.globl ct_rdtime
+ct_rdtime:
+	/*
+	 * Read the time; try again if necessary.
+	 */
+	rdtimeh		t1
+	rdtime		t0
+	rdtimeh		t2
+	bne		t1, t2, ct_rdtime
+
+	/*
+	 * Store the values per lo and hi.
+	 */
+	sw		t0, 0(a0)
+	sw		t1, 4(a0)
+
 	ret
