@@ -103,7 +103,7 @@ start(void)
 	 * counter to ms so that when we divide by time, we don't just wind
 	 * up with 0.
 	 */
-	printf("MIPS:            %u\n",
+	printf("IPS:             %u\n",
 	       ((cycles_end - cycles_start) /
 		(diff.lo / 1000000)) * 1000);
 

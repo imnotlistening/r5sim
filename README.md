@@ -1,6 +1,6 @@
 # R5SIM - Overview
 
-`r5sim` is a very simple RISC-V simulator. Currently it supports the rv32i
+`r5sim` is a very simple RISC-V simulator. Currently it supports the rv32im
 RISC-V standard. It has support for a trivially simple virtual UART (vuart)
 and small bootrom image.
 
