@@ -95,5 +95,17 @@ start(void)
 	printf("Cycles:          %u\n", cycles_end - cycles_start);
 	printf("Time taken (ns): %u:%u\n", diff.hi, diff.lo);
 
+	/*
+	 * Quick and dirty calculation for how many MIPS we are executing.
+	 * This assumes that diff.hi is 0 - e.g this takes less than 4 ish
+	 * seconds to execute (what type of programmer are you?! A lazy
+	 * one). Accuracy is in the ms range; that is we round our ns
+	 * counter to ms so that when we divide by time, we don't just wind
+	 * up with 0.
+	 */
+	printf("MIPS:            %u\n",
+	       ((cycles_end - cycles_start) /
+		(diff.lo / 1000000)) * 1000);
+
 	while (1);
 }
