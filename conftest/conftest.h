@@ -72,5 +72,7 @@ const struct ct_test *
 ct_system(void);
 const struct ct_test *
 ct_load_store(void);
+const struct ct_test *
+ct_muldiv(void);
 
 #endif

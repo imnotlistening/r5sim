@@ -154,7 +154,9 @@ r5sim_store_func3_to_str(uint32_t func3);
 const char *
 r5sim_op_imm_func3_to_str(uint32_t func3);
 const char *
-r5sim_op_func3_to_str(uint32_t func3, uint32_t func7);
+r5sim_op_i_func3_to_str(uint32_t func3, uint32_t func7);
+const char *
+r5sim_op_m_func3_to_str(uint32_t func3);
 const char *
 r5sim_branch_func3_to_str(uint32_t func3);
 const char *

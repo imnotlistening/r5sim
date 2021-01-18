@@ -9,7 +9,7 @@
 CC        = riscv64-linux-gnu-gcc
 
 # Add some special R5 options!
-CFLAGS    += -ffreestanding -march=rv32i -mabi=ilp32 \
+CFLAGS    += -ffreestanding -march=rv32im -mabi=ilp32 \
              -Wl,--build-id=none -nostartfiles -nodefaultlibs -T conftest.lds
 
 INCLUDES  = -I$(R5SIM_DIR)/include
@@ -19,7 +19,8 @@ OBJS      = start.o print.o
 
 OBJS      += test_env.o \
 	     test_system.o \
-	     test_ldst.o
+	     test_ldst.o \
+	     test_muldiv.o
 
 .PHONY: all clean install
 

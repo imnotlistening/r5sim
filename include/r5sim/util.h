@@ -12,6 +12,13 @@ static inline uint32_t sign_extend(uint32_t r, uint32_t sbit)
 	return (r ^ m) - m;
 }
 
+static inline uint64_t sign_extend_64(uint64_t r, uint64_t sbit)
+{
+	uint64_t m = 1 << sbit;
+
+	return (r ^ m) - m;
+}
+
 #define addr_in(base, length, addr)		\
 	(((addr) >= (base)) &&			\
 	 ((addr) < ((base) + (length))))

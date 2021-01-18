@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <r5sim/app.h>
 #include <r5sim/log.h>
 #include <r5sim/isa.h>
 #include <r5sim/env.h>
@@ -194,12 +195,10 @@ exec_op_imm(struct r5sim_machine *mach,
 }
 
 static int
-exec_op(struct r5sim_machine *mach,
-	struct r5sim_core *core,
-	const r5_inst *__inst)
+exec_op_i(struct r5sim_machine *mach,
+	  struct r5sim_core *core,
+	  const r5_inst_r *inst)
 {
-	const r5_inst_r *inst = (const r5_inst_r *)__inst;
-
 	switch (inst->func3) {
 	case 0x0: /* ADD, SUB */
 		if (inst->func7 & (0x1 << 5))
@@ -235,7 +234,7 @@ exec_op(struct r5sim_machine *mach,
 		break;
 	case 0x5: /* SRL, SRA */
 		if (inst->func7 & (0x1 << 5)) {
-			simple_core_inst_decode_err(__inst);
+			simple_core_inst_decode_err((const r5_inst *)inst);
 			return -1;
 		} else {
 			__set_reg(core, inst->rd,
@@ -256,12 +255,88 @@ exec_op(struct r5sim_machine *mach,
 	}
 
 	r5sim_itrace("%-6s %-3s <- %-3s op %-3s\n",
-		     r5sim_op_func3_to_str(inst->func3, inst->func7),
+		     r5sim_op_i_func3_to_str(inst->func3, inst->func7),
 		     r5sim_reg_to_str(inst->rd),
 		     r5sim_reg_to_str(inst->rs1),
 		     r5sim_reg_to_str(inst->rs2));
 
 	return 0;
+}
+
+static int
+exec_op_m(struct r5sim_machine *mach,
+	  struct r5sim_core *core,
+	  const r5_inst_r *inst)
+{
+	uint64_t uproduct;
+	int64_t  sproduct;
+
+	switch (inst->func3) {
+	case 0x0: /* MUL */
+		sproduct = (int32_t)__get_reg(core, inst->rs1) *
+			   (int32_t)__get_reg(core, inst->rs2);
+		__set_reg(core, inst->rd, (uint32_t)(sproduct & 0xffffffff));
+		break;
+	case 0x1: /* MULH */
+		sproduct = sign_extend_64(__get_reg(core, inst->rs1), 31) *
+			   sign_extend_64(__get_reg(core, inst->rs2), 31);
+		__set_reg(core, inst->rd,
+			  (uint32_t)((sproduct >> 32) & 0xffffffff));
+		break;
+	case 0x2: /* MULHSU */
+		sproduct = sign_extend_64(__get_reg(core, inst->rs1), 31) *
+			   __get_reg(core, inst->rs2);
+		__set_reg(core, inst->rd,
+			  (uint32_t)((sproduct >> 32) & 0xffffffff));
+		break;
+	case 0x3: /* MULHU */
+		uproduct = ((uint64_t)__get_reg(core, inst->rs1)) *
+			   ((uint64_t)__get_reg(core, inst->rs2));
+		__set_reg(core, inst->rd,
+			  (uint32_t)((uproduct >> 32) & 0xffffffff));
+		break;
+	case 0x4: /* DIV */
+		__set_reg(core, inst->rd, (uint32_t)
+			  (((int32_t)__get_reg(core, inst->rs1)) /
+			   ((int32_t)__get_reg(core, inst->rs2))));
+		break;
+	case 0x5: /* DIVU */
+		__set_reg(core, inst->rd,
+			  __get_reg(core, inst->rs1) /
+			  __get_reg(core, inst->rs2));
+		break;
+	case 0x6: /* REM */
+		__set_reg(core, inst->rd, (uint32_t)
+			  ((int32_t)__get_reg(core, inst->rs1) %
+			   (int32_t)__get_reg(core, inst->rs2)));
+		break;
+	case 0x7: /* REMU */
+		__set_reg(core, inst->rd,
+			  __get_reg(core, inst->rs1) %
+			  __get_reg(core, inst->rs2));
+		break;
+	}
+
+	r5sim_itrace("%-6s %-3s <- %-3s op %-3s\n",
+		     r5sim_op_m_func3_to_str(inst->func3),
+		     r5sim_reg_to_str(inst->rd),
+		     r5sim_reg_to_str(inst->rs1),
+		     r5sim_reg_to_str(inst->rs2));
+
+	return 0;
+}
+
+static int
+exec_op(struct r5sim_machine *mach,
+	struct r5sim_core *core,
+	const r5_inst *__inst)
+{
+	const r5_inst_r *inst = (const r5_inst_r *)__inst;
+
+	if (inst->func7 == 1)
+		return exec_op_m(mach, core, inst);
+	else
+		return exec_op_i(mach, core, inst);
 }
 
 static int

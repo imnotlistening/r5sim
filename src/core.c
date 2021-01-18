@@ -292,7 +292,7 @@ r5sim_op_imm_func3_to_str(uint32_t func3)
 }
 
 const char *
-r5sim_op_func3_to_str(uint32_t func3, uint32_t func7)
+r5sim_op_i_func3_to_str(uint32_t func3, uint32_t func7)
 {
 	switch (func3) {
 	case 0x0: /* ADD, SUB */
@@ -314,7 +314,31 @@ r5sim_op_func3_to_str(uint32_t func3, uint32_t func7)
 	}
 
 	return "ERR";
+}
 
+const char *
+r5sim_op_m_func3_to_str(uint32_t func3)
+{
+	switch (func3) {
+	case 0x0: /* MUL */
+		return "MUL";
+	case 0x1: /* MULH */
+		return "MULH";
+	case 0x2: /* MULHSU */
+		return "MULHSU";
+	case 0x3: /* MULHU */
+		return "MULHU";
+	case 0x4: /* DIV */
+		return "DIV";
+	case 0x5: /* DIVU */
+		return "DIVU";
+	case 0x6: /* REM */
+		return "REM";
+	case 0x7: /* REMU */
+		return "REMU";
+	}
+
+	return ERR;
 }
 
 const char *
