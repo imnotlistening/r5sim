@@ -20,7 +20,8 @@ OBJS      = start.o print.o
 OBJS      += test_env.o \
 	     test_system.o \
 	     test_ldst.o \
-	     test_muldiv.o
+	     test_muldiv.o \
+	     test_op.o
 
 .PHONY: all clean install
 

@@ -74,5 +74,38 @@ const struct ct_test *
 ct_load_store(void);
 const struct ct_test *
 ct_muldiv(void);
+const struct ct_test *
+ct_op(void);
+
+/*
+ * This makes it easy to build lots of arithmetic ops quickly. This
+ * is aimed at ops that take 3 register arguments.
+ */
+struct ct_op {
+	uint32_t a;
+	uint32_t b;
+	uint32_t answer;
+};
+
+#define test_op(name, __a, __b, __answer)	\
+	struct ct_op name = {			\
+		.a = __a,			\
+		.b = __b,			\
+		.answer = __answer,		\
+	}
+
+#define test_func(op)					\
+	static int					\
+	ct_test_##op(void *data)			\
+	{						\
+		struct ct_op *test = data;		\
+		uint32_t res;				\
+							\
+		asm(#op "	%0, %1, %2\n\t"		\
+		    : "=r" (res)			\
+		    : "r" (test->a), "r" (test->b));	\
+							\
+		return res == test->answer;		\
+	}
 
 #endif
