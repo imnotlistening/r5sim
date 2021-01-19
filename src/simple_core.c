@@ -393,7 +393,7 @@ exec_branch(struct r5sim_machine *mach,
 {
 	const r5_inst_b *inst = (const r5_inst_b *)__inst;
 	uint32_t rs1, rs2;
-	uint32_t offset;
+	uint32_t offset = 0;
 	int take_branch = 0;
 
 	rs1 = __get_reg(core, inst->rs1);

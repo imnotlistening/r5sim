@@ -35,7 +35,7 @@ virt_uart_readl(struct r5sim_iodev *iodev, uint32_t offs)
 	/*
 	 * Not a lot we can do if it fails.
 	 */
-	read(priv->master_fd, &c, 1);
+	r5sim_assert(read(priv->master_fd, &c, 1));
 
 	r5sim_dbg("vuart: R=%c\n", c);
 
@@ -57,7 +57,7 @@ virt_uart_writel(struct r5sim_iodev *iodev,
 	/*
 	 * Not much we can do if it fails.
 	 */
-	write(priv->master_fd, &c, 1);
+	r5sim_assert(write(priv->master_fd, &c, 1) == 1);
 }
 
 /*
