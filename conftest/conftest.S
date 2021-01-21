@@ -107,7 +107,7 @@ ct_rdtime:
 .globl trap_entrance
 .globl __trap_vector
 __trap_vector:
-	addi	sp,sp,-122
+	addi	sp,sp,-120
 	sw	ra,  0(sp)
 	sw	gp,  4(sp)
 	sw	tp,  8(sp)
@@ -182,5 +182,5 @@ __trap_vector:
 	lw	t5,  112(sp)
 	lw	t6,  116(sp)
 
-	addi	sp,sp,122
+	addi	sp,sp,120
 	mret
