@@ -12,24 +12,10 @@
 #include <r5sim/isa.h>
 #include <r5sim/env.h>
 #include <r5sim/core.h>
+#include <r5sim/trap.h>
 #include <r5sim/util.h>
 #include <r5sim/machine.h>
 #include <r5sim/simple_core.h>
-
-static void
-simple_core_err_dump(struct r5sim_core *core)
-{
-	r5sim_err("Core error detected!\n");
-	r5sim_core_describe(core);
-}
-
-static void
-simple_core_inst_decode_err(const r5_inst *__inst)
-{
-	uint32_t *inst = (uint32_t *)__inst;
-
-	r5sim_err("Failed to decode instruction: 0x%08x\n", *inst);
-}
 
 static int
 exec_misc_mem(struct r5sim_machine *mach,
@@ -83,8 +69,7 @@ exec_load(struct r5sim_machine *mach,
 		__set_reg(core, inst->rd, w);
 		break;
 	default:
-		simple_core_inst_decode_err(__inst);
-		return -1;
+		return TRAP_ILLEGAL_INST;
 	}
 
 	r5sim_itrace("%-6s @ 0x%08x [imm=0x%x] rs=%s\n",
@@ -122,8 +107,7 @@ exec_store(struct r5sim_machine *mach,
 				 core->reg_file[inst->rs2]);
 		break;
 	default:
-		simple_core_inst_decode_err(__inst);
-		return -1;
+		return TRAP_ILLEGAL_INST;
 	}
 
 	r5sim_itrace("%-6s @ 0x%08x [imm=0x%x] rs=%-3s rd=%-3s\n",
@@ -168,14 +152,17 @@ exec_op_imm(struct r5sim_machine *mach,
 		break;
 	case 0x5: /* SRLI, SRAI */
 		/*
-		 * Logical vs arithmetic shifts; sigh. The logical varient is
-		 * easy. The arithmetic a bit more annoying.
+		 * Most C compilers, apparently, implement logical right shifts
+		 * for signed types.
+		 * A quick local test verified this to be true for me - but YMMV.
 		 */
 		if (inst->imm_11_0 & (1 << 9))
 			__set_reg(core, inst->rd,
-				  __get_reg(core, inst->rs1) >> (imm & 0x1f));
+				  ((int32_t)__get_reg(core, inst->rs1)) >>
+				  (imm & 0x1f));
 		else
-			r5sim_assert(!"Sim bug: SRAI not implemented!");
+			__set_reg(core, inst->rd,
+				  __get_reg(core, inst->rs1) >> (imm & 0x1f));
 		break;
 	case 0x6: /* ORI */
 		__set_reg(core, inst->rd,
@@ -233,10 +220,15 @@ exec_op_i(struct r5sim_machine *mach,
 			  __get_reg(core, inst->rs2));
 		break;
 	case 0x5: /* SRL, SRA */
-		if (inst->func7 & (0x1 << 5)) {
-			simple_core_inst_decode_err((const r5_inst *)inst);
-			return -1;
-		} else {
+		if (inst->func7 & (0x1 << 5)) { /* SRA */
+			/*
+			 * Most C compilers, apparently, do arithmetic
+			 * shifting on signed types.
+			 */
+			__set_reg(core, inst->rd,
+				  ((int32_t)__get_reg(core, inst->rs1)) >>
+				  (__get_reg(core, inst->rs2) & 0x1f));
+		} else { /* SRL */
 			__set_reg(core, inst->rd,
 				  __get_reg(core, inst->rs1) >>
 				  (__get_reg(core, inst->rs2) & 0x1f));
@@ -419,8 +411,7 @@ exec_branch(struct r5sim_machine *mach,
 		take_branch = rs1 >= rs2;
 		break;
 	default:
-		simple_core_inst_decode_err(__inst);
-		return -1;
+		return TRAP_ILLEGAL_INST;
 	}
 
 	/*
@@ -494,8 +485,35 @@ exec_system(struct r5sim_machine *mach,
 {
 	const r5_inst_i *inst = (const r5_inst_i *)__inst;
 	const uint32_t csr = inst->imm_11_0;
+	int ret = 0;
 
 	switch (inst->func3) {
+	case 0x0: /* ECALL/EBREAK/etc. */
+		switch (csr) {
+		case 0x0: /* ECALL */
+			if (inst->rs1 || inst->rd) {
+				ret = TRAP_ILLEGAL_INST;
+				goto done;
+			} else {
+				ret = TRAP_ECALL_MMODE;
+			}
+			break;
+		case 0x1: /* EBREAK */
+			/*
+			 * No debug support yet; just die.
+			 */
+			r5sim_info("Sim bug: no debug support.\n");
+			r5sim_assert(0);
+			break;
+		case 0x2:   /* URET */
+		case 0x102: /* SRET */
+			ret = TRAP_ILLEGAL_INST;
+			goto done;
+		case 0x302: /* MRET */
+			ret = TRAP_MRET;
+			break;
+		}
+		break;
 	case 0x1: /* CSRRW */
 		__csr_w(core, inst->rd, __get_reg(core, inst->rs1), csr);
 		break;
@@ -515,18 +533,21 @@ exec_system(struct r5sim_machine *mach,
 		__csr_c(core, inst->rd, inst->rs1, csr);
 		break;
 	default:
-		simple_core_inst_decode_err(__inst);
-		return -1;
+		ret = TRAP_ILLEGAL_INST;
+
+		/* Skip tracing for illegal instructions. */
+		goto done;
 	}
 
 	r5sim_itrace("%-6s   0x%3X rd=%-3s %s=%u",
-		     r5sim_system_func3_to_str(inst->func3),
+		     r5sim_system_func3_to_str(inst->func3, csr),
 		     csr,
 		     r5sim_reg_to_str(inst->rd),
 		     inst->func3 >= 0x5 ? "imm" : "rs",
 		     inst->rs1);
 
-	return 0;
+done:
+	return ret;
 }
 
 /*
@@ -595,7 +616,7 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 	struct r5_op_family *fam;
 	uint32_t op_type;
 	r5_inst *inst;
-	int abort;
+	int strap;
 
 	inst = (r5_inst *)(&inst_mem);
 	fam = simple_core_opcode_fam(inst);
@@ -606,22 +627,16 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 		     op_type, fam->op_name);
 
 	if (fam->op_name == NULL || fam->op_exec == NULL) {
-		simple_core_inst_decode_err(inst);
-		simple_core_err_dump(core);
-		return -1;
+		return TRAP_ILLEGAL_INST;
 	}
 
 	if ((inst_mem & 0x3) != 0x3) {
-		simple_core_inst_decode_err(inst);
-		simple_core_err_dump(core);
-		return -1;
+		return TRAP_ILLEGAL_INST;
 	}
 
-	abort = fam->op_exec(mach, core, inst);
-	if (abort) {
-		simple_core_err_dump(core);
-		return -1;
-	}
+	strap = fam->op_exec(mach, core, inst);
+	if (strap)
+		return strap;
 
 	if (fam->incr_pc)
 		core->pc += 4;

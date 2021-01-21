@@ -15,7 +15,7 @@ CFLAGS    += -ffreestanding -march=rv32im -mabi=ilp32 \
 INCLUDES  = -I$(R5SIM_DIR)/include
 
 BINS      = conftest
-OBJS      = start.o print.o
+OBJS      = start.o print.o trap.o
 
 OBJS      += test_env.o \
 	     test_system.o \

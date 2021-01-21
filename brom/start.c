@@ -92,11 +92,11 @@ static void
 load_bootloader(void)
 {
 	uint32_t vdisk_pgsz = readl(VDISK_BASE + VDISK_PAGE_SIZE);
-	uint32_t dram_base = 0x40000000;
+	uint32_t dram_base = 0x20000000;
 	uint32_t offset, page;
 	blcall start;
 
-	brom_puts("Loading bootloader to DRAM start @ 0x40000000\n");
+	brom_puts("Loading bootloader to DRAM start @ 0x20000000\n");
 
 	offset = 0;
 	page = 0;

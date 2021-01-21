@@ -48,6 +48,15 @@ __attribute__((format (printf, 1, 2)))
 int
 printf(const char *fmt, ...);
 
+int
+trap_setup(void);
+int
+trap_test(void);
+void
+trap_entrance(uint32_t trap_pc, uint32_t cause);
+void
+__trap_vector(void);
+
 void
 ct_time_diff(struct ct_time *dst, struct ct_time *a, struct ct_time *b);
 void
@@ -107,5 +116,9 @@ struct ct_op {
 							\
 		return res == test->answer;		\
 	}
+
+
+#define TRAP_ILLEGAL_INST	2
+#define TRAP_ECALL_MMODE	11
 
 #endif

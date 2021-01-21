@@ -33,5 +33,27 @@ static inline uint64_t sign_extend_64(uint64_t r, uint64_t sbit)
 	   __typeof__ (b) __b = (b);		\
 	   __a < __b ? __a : __b; })
 
+/*
+ * Clear and then set a field to the passed value, __v.
+ */
+#define	set_field(reg, __f, __v)			\
+	({						\
+		typeof(reg) v = __v << (0 ? __f);	\
+		typeof(reg) m = (1 << (1 ? __f)) |	\
+			((1 << (1 ? __f)) - 1u);	\
+							\
+		m ^= ((1 << (0 ? __f)) - 1);		\
+		v &= m;					\
+		reg |= v;				\
+	})
+
+#define	get_field(reg, __f)				\
+	({						\
+		typeof(reg) m = (1 << (1 ? __f)) |	\
+			((1 << (1 ? __f)) - 1u);	\
+							\
+		m ^= ((1 << (0 ? __f)) - 1);		\
+		(reg & m) >> (0 ? __f);			\
+	})
 
 #endif

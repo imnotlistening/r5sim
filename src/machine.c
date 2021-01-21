@@ -269,7 +269,7 @@ static struct r5sim_machine default_machine = {
 	/*
 	 * 256 MB of DRAM starting at 1GB.
 	 */
-	.memory_base = GB(1),
+	.memory_base = MB(512),
 	.memory_size = MB(256),
 
 	/*

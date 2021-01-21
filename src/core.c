@@ -8,39 +8,16 @@
 
 #include <r5sim/log.h>
 #include <r5sim/env.h>
+#include <r5sim/isa.h>
 #include <r5sim/core.h>
+#include <r5sim/trap.h>
+#include <r5sim/util.h>
 
-/*
- * Timer callback so that the CSR timer function can get the host system
- * time. This generates a time in nanoseconds which is stored into the
- * TIME and TIMEH CSRs.
- *
- * The subsequent reads will then pull out this computed value from the
- * CSR file.
- */
 static void
-r5sim_csr_time(struct r5sim_core *core,
-	       struct r5sim_csr *csr)
+r5sim_core_halt(struct r5sim_core *core)
 {
-	long nsecs;
-	time_t secs;
-	uint64_t delta_ns;
-	struct timespec now;
-
-	clock_gettime(CLOCK_MONOTONIC, &now);
-
-	nsecs = now.tv_nsec - core->start.tv_nsec;
-	secs = now.tv_sec - core->start.tv_sec;
-
-	if (nsecs < 0) {
-		secs = secs - 1;
-		nsecs += 1000000000;
-	}
-
-	delta_ns = secs * 1000000000 + nsecs;
-
-	__raw_csr_write(&core->csr_file[CSR_TIME], (uint32_t)delta_ns);
-	__raw_csr_write(&core->csr_file[CSR_TIMEH], (uint32_t)(delta_ns >> 32));
+	r5sim_info("Core HALT'ing!\n");
+	r5sim_core_describe(core);
 }
 
 /*
@@ -75,118 +52,129 @@ r5sim_core_exec(struct r5sim_machine *mach,
 
 	r5sim_info("Execution begins @ 0x%08x\n", pc);
 
-	while (core->exec_one(mach, core) == 0)
-		r5sim_core_incr(core);
+	while (1) {
+		int strap;
 
-	r5sim_info("HALT.\n");
+		/*
+		 * Execute the primary instruction stream until we get
+		 * an exception.
+		 */
+		while ((strap = core->exec_one(mach, core)) == 0)
+			r5sim_core_incr(core);
+
+		/*
+		 * We broke from the above loop. That means we got an
+		 * exception. Handle it. If we fail to handle the
+		 * exception then just HALT for now. No nested trap
+		 * handling.
+		 */
+		if (r5sim_core_trap(mach, core, (uint32_t)strap))
+			break;
+
+		/*
+		 * Otherwise, once we are done with the trap, resume
+		 * normal execution.
+		 */
+	}
+
+	r5sim_core_halt(core);
 
 	return;
 }
 
-void
-__r5sim_core_add_csr(struct r5sim_core *core,
-		     struct r5sim_csr *csr_reg,
-		     uint32_t csr)
+static int
+r5sim_core_exec_trap(struct r5sim_machine *mach,
+		     struct r5sim_core *core,
+		     uint32_t pc)
 {
-	r5sim_assert(csr < 4096);
+	uint32_t ret;
 
-	core->csr_file[csr] = *csr_reg;
-}
+	core->pc = pc;
 
-static void
-r5sim_core_default_csrs(struct r5sim_core *core)
-{
-	r5sim_core_add_csr(core, CSR_CYCLE,	0x0, CSR_READ);
-	r5sim_core_add_csr(core, CSR_INSTRET,	0x0, CSR_READ);
-	r5sim_core_add_csr(core, CSR_CYCLEH,	0x0, CSR_READ);
-	r5sim_core_add_csr(core, CSR_INSTRET,	0x0, CSR_READ);
+	while (1) {
+		ret = core->exec_one(mach, core);
 
-	r5sim_core_add_csr_fn(core, CSR_TIME,	0x0, CSR_READ, r5sim_csr_time, NULL);
-	r5sim_core_add_csr_fn(core, CSR_TIMEH,	0x0, CSR_READ, r5sim_csr_time, NULL);
-}
+		/*
+		 * We are done with the trap! Yay.
+		 */
+		if (ret == TRAP_MRET)
+			break;
 
-void
-r5sim_core_init_common(struct r5sim_core *core)
-{
-	r5sim_core_default_csrs(core);
+		/*
+		 * If we get a 0 back, this was just a regular
+		 * instruction.
+		 */
+		if (ret == 0) {
+			r5sim_core_incr(core);
+			continue;
+		}
 
-	clock_gettime(CLOCK_MONOTONIC_COARSE, &core->start);
+		/*
+		 * Otherwise we have another exception: abort for now.
+		 */
+		r5sim_err("Cannot handle nested trap!\n");
+		r5sim_core_halt(core);
+		r5sim_assert(0);
+	}
+
+	return 0;
 }
 
 /*
- * All CSR instuctions read the CSR into rd; it's really only after that
- * the instructions have different effects.
+ * To execute a trap we must:
  *
- * This will return NULL if the CSR is not implemented. Otherwise it
- * returns the address of ther CSR struct in the CSR file.
+ *   1. Save the current PC to the xEPC CSR based on current priviledge
+ *      mode and save the code to MCAUSE.
+ *   2. Load the interrupt vector base.
+ *   3. Compute the vector offset based on MTVEC_MODE.
+ *   4. Set the priviledge mode to MODE_MACHINE.
+ *      a. Eventually we'll have S mode and will need to work out
+ *         delegation considerations; for now we don't support that
+ *         so we are done.
+ *   5. Begin executing instructions at the computed interrupt vector.
+ *   6. Reload PC with xEPC.
+ *
+ * Once this function returns the regular execution stream resumes.
  */
-static struct r5sim_csr *
-__csr_always(struct r5sim_core *core, uint32_t rd, uint32_t csr)
+int
+r5sim_core_trap(struct r5sim_machine *mach,
+		struct r5sim_core *core,
+		uint32_t code)
 {
-	struct r5sim_csr *csr_reg;
+	uint32_t mtvec, base, mode;
+	uint32_t mcause = 0;
 
-	r5sim_assert(csr < 4096);
+	set_field(mcause, CSR_MCAUSE_CODE, code);
 
-	csr_reg = &core->csr_file[csr];
+	/* 1. Save PC to MEPC. */
+	csr_write(core, CSR_MEPC, core->pc);
+	csr_write(core, CSR_MCAUSE, mcause);
 
-	if ((csr_reg->flags & CSR_PRESENT) == 0)
-		return NULL;
+	/* 2. Load the interrupt vector base. */
+	mtvec = csr_read(core, CSR_MTVEC);
 
-	if ((csr_reg->flags & CSR_READ) != 0 && rd != 0) {
-		if (csr_reg->read_fn)
-			csr_reg->read_fn(core, csr_reg);
-		__set_reg(core, rd, __raw_csr_read(csr_reg));
-	}
+	/*
+	 * 3. Compute vector; it's always just base for synchronous
+	 * exceptions.
+	 */
+	base  = get_field(mtvec, CSR_MTVEC_BASE);
+	mode  = get_field(mtvec, CSR_MTVEC_MODE);
 
-	return csr_reg;
-}
+	r5sim_dbg("Trap detected.\n");
+	r5sim_dbg("  MCAUSE: 0x%08x\n", mcause);
+	r5sim_dbg("  MTVEC:  0x%08x\n", mtvec);
+	r5sim_dbg("    Base: 0x%08x\n", base);
+	r5sim_dbg("    Mode: %s\n", mode ? "vectored" : "direct");
 
-void
-__csr_w(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr)
-{
-	struct r5sim_csr *csr_reg;
+	/* 4: Skipped. */
 
-	csr_reg = __csr_always(core, rd, csr);
-	if (csr_reg == NULL)
-		return;
+	/* 5: Skipped. */
+	r5sim_core_exec_trap(mach, core, base);
 
-	if ((csr_reg->flags & CSR_WRITE) != 0) {
-		if (csr_reg->write_fn)
-			csr_reg->write_fn(core, csr_reg);
-		__raw_csr_write(csr_reg, value);
-	}
-}
+	/* 6. Reload PC with xEPC */
+	core->pc = csr_read(core, CSR_MEPC);
 
-void
-__csr_s(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr)
-{
-	struct r5sim_csr *csr_reg;
-
-	csr_reg = __csr_always(core, rd, csr);
-	if (csr_reg == NULL)
-		return;
-
-	if ((csr_reg->flags & CSR_WRITE) != 0) {
-		if (csr_reg->write_fn)
-			csr_reg->write_fn(core, csr_reg);
-		__raw_csr_set_mask(csr_reg, value);
-	}
-}
-
-void
-__csr_c(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr)
-{
-	struct r5sim_csr *csr_reg;
-
-	csr_reg = __csr_always(core, rd, csr);
-	if (csr_reg == NULL)
-		return;
-
-	if ((csr_reg->flags & CSR_WRITE) != 0) {
-		if (csr_reg->write_fn)
-			csr_reg->write_fn(core, csr_reg);
-		__raw_csr_clear_mask(csr_reg, value);
-	}
+	return 0;
 }
 
 void
@@ -363,9 +351,20 @@ r5sim_branch_func3_to_str(uint32_t func3)
 }
 
 const char *
-r5sim_system_func3_to_str(uint32_t func3)
+r5sim_system_func3_to_str(uint32_t func3, uint32_t csr)
 {
 	switch (func3) {
+	case 0x0: /* ECALL, MRET. */
+		switch (csr) {
+		case 0x0:   /* ECALL */
+			return "ECALL";
+		case 0x1:   /* EBREAK */
+		case 0x2:   /* URET */
+		case 0x102: /* SRET */
+			return "ERR";
+		case 0x302: /* MRET */
+			return "MRET";
+		}
 	case 0x1: /* CSRRW */
 		return "CSRRW";
 	case 0x2: /* CSRRS */
