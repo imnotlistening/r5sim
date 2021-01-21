@@ -27,7 +27,7 @@ virt_uart_readl(struct r5sim_iodev *iodev, uint32_t offs)
 	struct virt_uart_priv *priv = iodev->priv;
 	char c = 0;
 
-	r5sim_dbg("vuart: R=%c (%u)\n", c, offs);
+	r5sim_dbg_vv("vuart: R=%c (%u)\n", c, offs);
 
 	if (offs != VUART_READ)
 		return 0x0;
@@ -37,7 +37,7 @@ virt_uart_readl(struct r5sim_iodev *iodev, uint32_t offs)
 	 */
 	r5sim_assert(read(priv->master_fd, &c, 1));
 
-	r5sim_dbg("vuart: R=%c\n", c);
+	r5sim_dbg_vv("vuart: R=%c\n", c);
 
 	return (uint32_t)c;
 }
@@ -49,7 +49,7 @@ virt_uart_writel(struct r5sim_iodev *iodev,
 	struct virt_uart_priv *priv = iodev->priv;
 	char c = val & 0xff;
 
-	r5sim_dbg("vuart: W=%c (%u)\n", c, offs);
+	r5sim_dbg_vv("vuart: W=%c (%u)\n", c, offs);
 
 	if (offs != VUART_WRITE)
 		return;

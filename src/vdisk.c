@@ -22,7 +22,7 @@
 
 #include <r5sim/hw/vdisk.h>
 
-#define vdisk_dbg r5sim_dbg
+#define vdisk_dbg r5sim_dbg_v
 
 struct virt_disk_priv {
 	int	 fd;

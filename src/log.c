@@ -11,16 +11,18 @@
 #define R5SIM_FMT	"[%s] %15s:%-4d | %s"
 #define BUF_LIMIT	256
 
-static const char *level_messages[5] = {
+static const char *level_messages[4] = {
 	"E",
 	"W",
 	"I",
 	"D",
-	"T",
 };
 
 static const char *level_to_str(enum r5sim_log_level lvl)
 {
+	if (lvl > 3)
+		lvl = 3;
+
 	return level_messages[lvl];
 }
 
