@@ -36,5 +36,4 @@ _start:
 	lui	t0,%hi(0x4000000)
 .loop:
 	lw	t1, 0(t0)
-	.long	0xDEAD0000
 	j	.loop

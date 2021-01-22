@@ -28,33 +28,45 @@
 	(dest) = (dest & ~(mask)) | ((src) & (mask))
 
 /*
- * Handle a load from an arbitrary (potentially unaligned) address
- * in the specified mem region. paddr needs to be normalized to the
- * mem address space. bytes is maxed at 4 (e.g sizeof(uint32_t)).
+ * Load a word from a given memory space.
  */
 static uint32_t
-__load_bytes(uint8_t *mem, uint32_t paddr, uint32_t bytes)
+__load_word(uint32_t *mem, uint32_t paddr, uint32_t base)
 {
-	uint32_t w;
-
-	r5sim_assert(bytes && bytes <= sizeof(w));
-
-	memcpy(&w, &mem[paddr], bytes);
-
-	return w;
+	return mem[(paddr - base) >> 2];
 }
 
-/*
- * Write number of bytes to an arbitrary address. The max bytes is 4
- * and are copied from val.
- */
-static void
-__write_bytes(uint8_t *mem, uint32_t paddr,
-	      uint32_t val, uint32_t bytes)
+static uint32_t
+__load_half(uint16_t *mem, uint32_t paddr, uint32_t base)
 {
-	r5sim_assert(bytes && bytes <= sizeof(val));
+	return mem[(paddr - base) >> 1];
+}
 
-	memcpy(&mem[paddr], &val, bytes);
+static uint32_t
+__load_byte(uint8_t *mem, uint32_t paddr, uint32_t base)
+{
+	return mem[paddr - base];
+}
+
+static void
+__write_word(uint32_t *mem, uint32_t paddr,
+	     uint32_t base, uint32_t v)
+{
+	mem[(paddr - base) >> 2] = v;
+}
+
+static void
+__write_half(uint16_t *mem, uint32_t paddr,
+	     uint32_t base, uint16_t v)
+{
+	mem[(paddr - base) >> 1] = v;
+}
+
+static void
+__write_byte(uint8_t *mem, uint32_t paddr,
+	     uint32_t base, uint8_t v)
+{
+	mem[paddr - base] = v;
 }
 
 /*
@@ -111,12 +123,16 @@ r5sim_default_io_memstore(struct r5sim_machine *mach,
 	r5sim_warn("Store to non-existent IO addr: 0x%08x\n", paddr);
 }
 
-static uint32_t
+static int
 r5sim_default_memload32(struct r5sim_machine *mach,
-			uint32_t paddr)
+			uint32_t paddr,
+			uint32_t *dest)
 {
-	/* Align to 4bytes. */
-	paddr &= ~0x3;
+	/*
+	 * Check alignment; we don't support unaligned loads.
+	 */
+	if (paddr & 0x3)
+		return ML_ALIGN_FAULT;
 
 	/*
 	 * DRAM access and BROM access is easy.
@@ -124,78 +140,86 @@ r5sim_default_memload32(struct r5sim_machine *mach,
 	if (addr_in(mach->memory_base,
 		    mach->memory_size,
 		    paddr))
-		return __load_bytes(mach->memory, paddr - mach->memory_base, 0x4);
+		*dest = __load_word((uint32_t *)mach->memory,
+				    paddr, mach->memory_base);
 	else if (addr_in(mach->brom_base,
 			 mach->brom_size,
 			 paddr))
-		return __load_bytes(mach->brom, paddr - mach->brom_base, 0x4);
+		*dest =  __load_word((uint32_t *)mach->brom,
+				     paddr, mach->brom_base);
 	else if (addr_in(mach->iomem_base,
 			 mach->iomem_size,
 			 paddr))
-		return r5sim_default_io_memload(mach, paddr);
+		*dest = r5sim_default_io_memload(mach, paddr);
 	else {
 		r5sim_core_describe(mach->core);
 		r5sim_err("Invalid load address: 0x%x\n", paddr);
 		r5sim_assert(!"Invalid LOAD address!");
 	}
 
-	return 0x0;
+	return 0;
 }
 
-static uint16_t
+static int
 r5sim_default_memload16(struct r5sim_machine *mach,
-			uint32_t paddr)
+			uint32_t paddr,
+			uint16_t *dest)
 {
-	/* Align to 2bytes. */
-	paddr &= ~0x1;
+	if (paddr & 0x1)
+		return ML_ALIGN_FAULT;
 
 	/* Don't allow non-word aligned IO accesses! */
 	if (addr_in(mach->memory_base,
 		    mach->memory_size,
 		    paddr))
-		return __load_bytes(mach->memory, paddr - mach->memory_base, 0x2);
+		*dest = __load_half((uint16_t *)mach->memory,
+				    paddr, mach->memory_base);
 	else if (addr_in(mach->brom_base,
 			 mach->brom_size,
 			 paddr))
-		return __load_bytes(mach->brom, paddr - mach->brom_base, 0x2);
+		*dest = __load_half((uint16_t *)mach->brom,
+				    paddr, mach->brom_base);
 	else {
 		r5sim_core_describe(mach->core);
 		r5sim_err("16b access to IO aperture: 0x%x\n", paddr);
 		r5sim_assert(!"Invalid LOAD address!");
 	}
 
-	return 0x0;
+	return 0;
 }
 
-static uint8_t
+static int
 r5sim_default_memload8(struct r5sim_machine *mach,
-		       uint32_t paddr)
+		       uint32_t paddr,
+		       uint8_t *dest)
 {
 	/* Don't allow non-word aligned IO accesses! */
 	if (addr_in(mach->memory_base,
 		    mach->memory_size,
 		    paddr))
-		return __load_bytes(mach->memory, paddr - mach->memory_base, 0x1);
+		*dest = __load_byte(mach->memory,
+				    paddr, mach->memory_base);
 	else if (addr_in(mach->brom_base,
 			 mach->brom_size,
 			 paddr))
-		return __load_bytes(mach->brom, paddr - mach->brom_base, 0x1);
+		*dest = __load_byte(mach->brom,
+				    paddr, mach->brom_base);
 	else {
 		r5sim_core_describe(mach->core);
-		r5sim_err("8b access to IO aperture: 0x%x\n", paddr);
+		r5sim_err("8b access to invalid aperture: 0x%x\n", paddr);
 		r5sim_assert(!"Invalid LOAD address!");
 	}
 
 	return 0;
 }
 
-static void
+static int
 r5sim_default_memstore32(struct r5sim_machine *mach,
 			 uint32_t paddr,
 			 uint32_t value)
 {
-	/* Align to 4 bytes. */
-	paddr &= ~0x3;
+	if (paddr & 0x3)
+		return ML_ALIGN_FAULT;
 
 	/*
 	 * No stores to BROM!
@@ -203,8 +227,8 @@ r5sim_default_memstore32(struct r5sim_machine *mach,
 	if (addr_in(mach->memory_base,
 		    mach->memory_size,
 		    paddr))
-		__write_bytes(mach->memory, paddr - mach->memory_base,
-			      value, 0x4);
+		__write_word((uint32_t *)mach->memory, paddr,
+			     mach->memory_base, value);
 	else if (addr_in(mach->iomem_base,
 			 mach->iomem_size,
 			 paddr))
@@ -214,15 +238,17 @@ r5sim_default_memstore32(struct r5sim_machine *mach,
 		r5sim_err("Invalid store address: 0x%x\n", paddr);
 		r5sim_assert(!"Invalid STORE address!");
 	}
+
+	return 0;
 }
 
-static void
+static int
 r5sim_default_memstore16(struct r5sim_machine *mach,
 			 uint32_t paddr,
 			 uint16_t value)
 {
-	/* Align to 2 bytes. */
-	paddr &= ~0x1;
+	if (paddr & 0x1)
+		return ML_ALIGN_FAULT;
 
 	/*
 	 * No stores to BROM or to IO mem when not word aligned.
@@ -230,16 +256,18 @@ r5sim_default_memstore16(struct r5sim_machine *mach,
 	if (addr_in(mach->memory_base,
 		    mach->memory_size,
 		    paddr)) {
-		__write_bytes(mach->memory, paddr - mach->memory_base,
-			      value, 0x2);
+		__write_half((uint16_t *)mach->memory, paddr,
+			     mach->memory_base, value);
 	} else {
 		r5sim_core_describe(mach->core);
 		r5sim_err("Invalid store address: 0x%x\n", paddr);
 		r5sim_assert(!"Invalid STORE address!");
 	}
+
+	return 0;
 }
 
-static void
+static int
 r5sim_default_memstore8(struct r5sim_machine *mach,
 			 uint32_t paddr,
 			 uint8_t value)
@@ -250,13 +278,15 @@ r5sim_default_memstore8(struct r5sim_machine *mach,
 	if (addr_in(mach->memory_base,
 		    mach->memory_size,
 		    paddr)) {
-		__write_bytes(mach->memory, paddr - mach->memory_base,
-			      value, 0x1);
+		__write_byte(mach->memory, paddr,
+			     mach->memory_base, value);
 	} else {
 		r5sim_core_describe(mach->core);
 		r5sim_err("Invalid store address: 0x%x\n", paddr);
 		r5sim_assert(!"Invalid STORE address!");
 	}
+
+	return 0;
 }
 
 /*
@@ -314,11 +344,9 @@ r5sim_machine_load_default(void)
 	mach->core = r5sim_simple_core_instance(mach);
 
 	mach->memory = malloc(mach->memory_size);
-	mach->memory_words = (uint32_t *)mach->memory;
 	r5sim_assert(mach->memory != NULL);
 
 	mach->brom = malloc(mach->brom_size);
-	mach->brom_words = (uint32_t *)mach->brom;
 	r5sim_assert(mach->brom != NULL);
 
 	INIT_LIST_HEAD(&mach->io_devs);

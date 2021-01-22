@@ -2,6 +2,7 @@
  * Basic CPU core interfaces.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <time.h>
@@ -244,11 +245,11 @@ r5sim_store_func3_to_str(uint32_t func3)
 {
 	switch (func3) {
 	case 0x0: /* SB */
-		return "LB";
+		return "SB";
 	case 0x1: /* SH */
-		return "LH";
+		return "SH";
 	case 0x2: /* SW */
-		return "LW";
+		return "SW";
 	}
 
 	return "ERR";

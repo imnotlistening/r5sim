@@ -6,6 +6,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <r5sim/app.h>
 #include <r5sim/log.h>
@@ -37,7 +38,7 @@ exec_load(struct r5sim_machine *mach,
 {
 	const r5_inst_i *inst = (const r5_inst_i *)__inst;
 	uint32_t paddr_src;
-	uint32_t w;
+	uint32_t w = 0;
 
 	paddr_src = core->reg_file[inst->rs1] +
 		sign_extend(inst->imm_11_0, 11);
@@ -47,36 +48,43 @@ exec_load(struct r5sim_machine *mach,
 	 */
 	switch (inst->func3) {
 	case 0x0: /* LB */
-		w = mach->memload8(mach, paddr_src);
+		/* Since there's no MMU this can't really trap... */
+		if (mach->memload8(mach, paddr_src, (uint8_t *)(&w)))
+			return TRAP_LD_ADDR_MISLAIGN;
 		w = sign_extend(w, 7);
 		__set_reg(core, inst->rd, w);
 		break;
 	case 0x1: /* LH */
-		w = mach->memload16(mach, paddr_src);
+		if (mach->memload16(mach, paddr_src, (uint16_t *)(&w)))
+			return TRAP_LD_ADDR_MISLAIGN;
 		w = sign_extend(w, 15);
 		__set_reg(core, inst->rd, w);
 		break;
 	case 0x2: /* LW */
-		w = mach->memload32(mach, paddr_src);
+		if (mach->memload32(mach, paddr_src, &w))
+			return TRAP_LD_ADDR_MISLAIGN;
 		__set_reg(core, inst->rd, w);
 		break;
 	case 0x4: /* LBU */
-		w = mach->memload8(mach, paddr_src);
+		if (mach->memload8(mach, paddr_src, (uint8_t *)(&w)))
+			return TRAP_LD_ADDR_MISLAIGN;
 		__set_reg(core, inst->rd, w);
 		break;
 	case 0x5: /* LHU */
-		w = mach->memload16(mach, paddr_src);
+		if (mach->memload16(mach, paddr_src, (uint16_t *)(&w)))
+			return TRAP_LD_ADDR_MISLAIGN;
 		__set_reg(core, inst->rd, w);
 		break;
 	default:
 		return TRAP_ILLEGAL_INST;
 	}
 
-	r5sim_itrace("%-6s @ 0x%08x [imm=0x%x] rs=%s\n",
+	r5sim_itrace("%-6s @ 0x%08x [imm=0x%x] rs=%-3s rd=%s\n",
 		     r5sim_load_func3_to_str(inst->func3),
 		     paddr_src,
 		     sign_extend(inst->imm_11_0, 11),
-		     r5sim_reg_to_str(inst->rs1));
+		     r5sim_reg_to_str(inst->rs1),
+		     r5sim_reg_to_str(inst->rd));
 
 	return 0;
 }
@@ -95,16 +103,19 @@ exec_store(struct r5sim_machine *mach,
 
 	switch (inst->func3) {
 	case 0x0: /* SB */
-		mach->memstore8(mach, paddr_dst,
-				core->reg_file[inst->rs2]);
+		if (mach->memstore8(mach, paddr_dst,
+				    (uint8_t)core->reg_file[inst->rs2]))
+			return TRAP_LD_ADDR_MISLAIGN;
 		break;
 	case 0x1: /* SH */
-		mach->memstore16(mach, paddr_dst,
-				 core->reg_file[inst->rs2]);
+		if (mach->memstore16(mach, paddr_dst,
+				     (uint16_t)core->reg_file[inst->rs2]))
+		    return TRAP_LD_ADDR_MISLAIGN;
 		break;
 	case 0x2: /* SW */
-		mach->memstore32(mach, paddr_dst,
-				 core->reg_file[inst->rs2]);
+		if (mach->memstore32(mach, paddr_dst,
+				     core->reg_file[inst->rs2]))
+			return TRAP_LD_ADDR_MISLAIGN;
 		break;
 	default:
 		return TRAP_ILLEGAL_INST;
@@ -174,8 +185,9 @@ exec_op_imm(struct r5sim_machine *mach,
 		break;
 	}
 
-	r5sim_itrace("%-6s %-3s [imm=0x%x]\n",
+	r5sim_itrace("%-6s %-3s <- %-3s [imm=0x%x]\n",
 		     r5sim_op_imm_func3_to_str(inst->func3),
+		     r5sim_reg_to_str(inst->rd),
 		     r5sim_reg_to_str(inst->rs1),
 		     imm);
 	return 0;
@@ -453,7 +465,7 @@ exec_auipc(struct r5sim_machine *mach,
 	__set_reg(core, inst->rd,
 		  (*inst_u32 & 0xfffff000) + core->pc);
 
-	r5sim_itrace("AIUPC  %-3s <- 0x%08x + 0x%08x",
+	r5sim_itrace("AIUPC  %-3s <- 0x%08x + 0x%08x\n",
 		     r5sim_reg_to_str(inst->rd),
 		     core->pc,
 		     (*inst_u32 & 0xfffff000));
@@ -471,7 +483,7 @@ exec_lui(struct r5sim_machine *mach,
 
 	__set_reg(core, inst->rd, *inst_u32 & 0xfffff000);
 
-	r5sim_itrace("LUI    %-3s <- 0x%08x",
+	r5sim_itrace("LUI    %-3s <- 0x%08x\n",
 		     r5sim_reg_to_str(inst->rd),
 		     *inst_u32 & 0xfffff000);
 
@@ -539,7 +551,7 @@ exec_system(struct r5sim_machine *mach,
 		goto done;
 	}
 
-	r5sim_itrace("%-6s   0x%3X rd=%-3s %s=%u",
+	r5sim_itrace("%-6s   0x%3X rd=%-3s %s=%u\n",
 		     r5sim_system_func3_to_str(inst->func3, csr),
 		     csr,
 		     r5sim_reg_to_str(inst->rd),
@@ -612,11 +624,14 @@ simple_core_opcode_fam(r5_inst *inst)
 static int simple_core_exec_one(struct r5sim_machine *mach,
 				struct r5sim_core *core)
 {
-	uint32_t inst_mem = mach->memload32(mach, core->pc);
+	uint32_t inst_mem;
 	struct r5_op_family *fam;
 	uint32_t op_type;
 	r5_inst *inst;
 	int strap;
+
+	if (mach->memload32(mach, core->pc, &inst_mem))
+		return TRAP_INST_ADDR_MISALIGN;
 
 	inst = (r5_inst *)(&inst_mem);
 	fam = simple_core_opcode_fam(inst);

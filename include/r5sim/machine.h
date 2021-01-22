@@ -11,6 +11,10 @@
 
 struct r5sim_core;
 
+#define ML_ALIGN_FAULT	-1
+#define ML_PAGE_FAULT	-2
+#define ML_ACCESS_FAULT	-3
+
 /*
  * Define a "machine". This is a single core - for now - and some memory.
  * Define several function pointers for accessing memory, device memory,
@@ -29,12 +33,10 @@ struct r5sim_machine {
 	uint32_t    memory_base;
 	uint32_t    memory_size;
 	uint8_t    *memory;
-	uint32_t   *memory_words;
 
 	uint32_t    brom_base;
 	uint32_t    brom_size;
 	uint8_t    *brom;
-	uint32_t   *brom_words;
 
 	uint32_t    iomem_base;
 	uint32_t    iomem_size;
@@ -42,20 +44,34 @@ struct r5sim_machine {
 	/*
 	 * Load and store - will direct the loads and stores to either DRAM
 	 * or the relevant IO device.
+	 *
+	 * Return 0 if the load/store was successful. If unsuccessful it
+	 * can return:
+	 *
+	 *   - ML_ALIGN_FAULT
+	 *   - ML_PAGE_FAULT
+	 *   - ML_ACCESS_FAULT
+	 *
+	 * Note that only the first is currently supported since there's no
+	 * MMU yet.
 	 */
-	uint32_t  (*memload32)(struct r5sim_machine *mach,
-			       uint32_t paddr);
-	uint16_t  (*memload16)(struct r5sim_machine *mach,
-			       uint32_t paddr);
-	uint8_t   (*memload8)(struct r5sim_machine *mach,
-			      uint32_t paddr);
-	void      (*memstore32)(struct r5sim_machine *mach,
+	int       (*memload32)(struct r5sim_machine *mach,
+			       uint32_t paddr,
+			       uint32_t *dest);
+	int       (*memload16)(struct r5sim_machine *mach,
+			       uint32_t paddr,
+			       uint16_t *dest);
+	int       (*memload8)(struct r5sim_machine *mach,
+			      uint32_t paddr,
+			      uint8_t *dest);
+
+	int       (*memstore32)(struct r5sim_machine *mach,
 				uint32_t paddr,
 				uint32_t value);
-	void      (*memstore16)(struct r5sim_machine *mach,
+	int       (*memstore16)(struct r5sim_machine *mach,
 				uint32_t paddr,
 				uint16_t value);
-	void      (*memstore8)(struct r5sim_machine *mach,
+	int       (*memstore8)(struct r5sim_machine *mach,
 			       uint32_t paddr,
 			       uint8_t value);
 
