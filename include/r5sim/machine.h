@@ -5,7 +5,7 @@
 #ifndef __R5SIM_MACHINE__
 #define __R5SIM_MACHINE__
 
-#include <stdint.h>
+#include <r5sim/env.h>
 
 #include <r5sim/list.h>
 
@@ -30,16 +30,16 @@ struct r5sim_machine {
 	/*
 	 * Base memory address and size; this is "DRAM".
 	 */
-	uint32_t    memory_base;
-	uint32_t    memory_size;
-	uint8_t    *memory;
+	u32    memory_base;
+	u32    memory_size;
+	u8    *memory;
 
-	uint32_t    brom_base;
-	uint32_t    brom_size;
-	uint8_t    *brom;
+	u32    brom_base;
+	u32    brom_size;
+	u8    *brom;
 
-	uint32_t    iomem_base;
-	uint32_t    iomem_size;
+	u32    iomem_base;
+	u32    iomem_size;
 
 	/*
 	 * Load and store - will direct the loads and stores to either DRAM
@@ -56,24 +56,24 @@ struct r5sim_machine {
 	 * MMU yet.
 	 */
 	int       (*memload32)(struct r5sim_machine *mach,
-			       uint32_t paddr,
-			       uint32_t *dest);
+			       u32 paddr,
+			       u32 *dest);
 	int       (*memload16)(struct r5sim_machine *mach,
-			       uint32_t paddr,
-			       uint16_t *dest);
+			       u32 paddr,
+			       u16 *dest);
 	int       (*memload8)(struct r5sim_machine *mach,
-			      uint32_t paddr,
-			      uint8_t *dest);
+			      u32 paddr,
+			      u8 *dest);
 
 	int       (*memstore32)(struct r5sim_machine *mach,
-				uint32_t paddr,
-				uint32_t value);
+				u32 paddr,
+				u32 value);
 	int       (*memstore16)(struct r5sim_machine *mach,
-				uint32_t paddr,
-				uint16_t value);
+				u32 paddr,
+				u16 value);
 	int       (*memstore8)(struct r5sim_machine *mach,
-			       uint32_t paddr,
-			       uint8_t value);
+			       u32 paddr,
+			       u8 value);
 
 	/*
 	 * List of IO devices, e.g UARTs.

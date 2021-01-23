@@ -5,8 +5,7 @@
 #ifndef __R5SIM_IODEV_H__
 #define __R5SIM_IODEV_H__
 
-#include <stdint.h>
-
+#include <r5sim/env.h>
 #include <r5sim/list.h>
 
 struct r5sim_machine;
@@ -22,16 +21,15 @@ struct r5sim_iodev {
 	/*
 	 * Base IO address offset. This is offset from machine.iomem_base.
 	 */
-	uint32_t              io_offset;
-	uint32_t              io_size;
+	u32              io_offset;
+	u32              io_size;
 
 	/*
 	 * IO accessor functions; these are 0 based from io_offset.
 	 */
-	uint32_t            (*readl)(struct r5sim_iodev *dev,
-				     uint32_t offs);
-	void                (*writel)(struct r5sim_iodev *dev,
-				      uint32_t offs, uint32_t val);
+	u32            (*readl)(struct r5sim_iodev *dev, u32 offs);
+	void           (*writel)(struct r5sim_iodev *dev,
+				 u32 offs, u32 val);
 
 	/*
 	 * List entry for when this device is attached to a machine.

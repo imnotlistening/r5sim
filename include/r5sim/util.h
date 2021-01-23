@@ -5,9 +5,9 @@
 #ifndef __R5SIM_UTIL_H__
 #define __R5SIM_UTIL_H__
 
-static inline uint32_t sign_extend(uint32_t r, uint32_t sbit)
+static inline u32 sign_extend(u32 r, u32 sbit)
 {
-	uint32_t m = 1 << sbit;
+	u32 m = 1 << sbit;
 
 	return (r ^ m) - m;
 }

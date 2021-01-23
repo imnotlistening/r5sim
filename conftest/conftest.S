@@ -45,7 +45,7 @@ _start:
 .section	.text
 
 /*
- * uint32_t ct_rdcycle(void)
+ * u32 ct_rdcycle(void)
  *
  * Reads and returns the cycle counter from the CYCLE CSR.
  */
@@ -55,7 +55,7 @@ ct_rdcycle:
 	ret
 
 /*
- * uint32_t ct_rdinstret(void)
+ * u32 ct_rdinstret(void)
  *
  * Reads and returns the instret (instructions retired - i.e number of
  * instructions fully executed) counter from the CYCLE CSR. instret and

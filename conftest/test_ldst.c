@@ -9,7 +9,7 @@ struct ct_chars_list {
 	char		b;
 	char		c;
 	char		d;
-	uint32_t	sum;
+	u32	sum;
 };
 
 static struct ct_chars_list test1 = {
@@ -27,7 +27,7 @@ static int
 ct_test_load_bytes(void *data)
 {
 	struct ct_chars_list *chars = data;
-	uint32_t sum;
+	u32 sum;
 
 	sum = chars->a + chars->b + chars->c + chars->d;
 

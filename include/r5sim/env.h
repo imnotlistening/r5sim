@@ -6,6 +6,7 @@
 #define __R5SIM_ENV_H__
 
 #include <assert.h>
+#include <stdint.h>
 
 /*
  * This may expand in the future.
@@ -18,5 +19,13 @@
 #define GB(x) ((x) << 30)
 #define MB(x) ((x) << 20)
 #define KB(x) ((x) << 10)
+
+typedef uint32_t u32;
+typedef uint16_t u16;
+typedef uint8_t  u8;
+
+typedef int32_t  s32;
+typedef int16_t  s16;
+typedef int8_t   s8;
 
 #endif

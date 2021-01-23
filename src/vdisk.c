@@ -30,11 +30,11 @@ struct virt_disk_priv {
 
 	size_t	 size;
 
-	uint32_t dev_state[VDISK_MAX_REG >> 2];
+	u32 dev_state[VDISK_MAX_REG >> 2];
 };
 
 static const char *
-vdisk_reg_to_str(uint32_t reg)
+vdisk_reg_to_str(u32 reg)
 {
 	static const char *str_reg[] = {
 		[VDISK_PRESENT]		= "VDISK_PRESENT",
@@ -58,27 +58,27 @@ vdisk_reg_to_str(uint32_t reg)
  * Set a state register for the device.
  */
 static void
-__vdisk_set_state(struct virt_disk_priv *disk, uint32_t __i, uint32_t val)
+__vdisk_set_state(struct virt_disk_priv *disk, u32 __i, u32 val)
 {
-	uint32_t i = __i >> 2;
+	u32 i = __i >> 2;
 
 	r5sim_assert(i < VDISK_MAX_REG);
 
 	disk->dev_state[i] = val;
 }
 
-static uint32_t
-__vdisk_read_state(struct virt_disk_priv *disk, uint32_t __i)
+static u32
+__vdisk_read_state(struct virt_disk_priv *disk, u32 __i)
 {
-	uint32_t i = __i >> 2;
+	u32 i = __i >> 2;
 
 	r5sim_assert(i < VDISK_MAX_REG);
 
 	return disk->dev_state[i];
 }
 
-static uint32_t
-virt_disk_readl(struct r5sim_iodev *iodev, uint32_t offs)
+static u32
+virt_disk_readl(struct r5sim_iodev *iodev, u32 offs)
 
 {
 	vdisk_dbg("LOAD  @ %s\n",
@@ -96,10 +96,10 @@ virt_disk_exec_op(struct r5sim_iodev *iodev)
 	struct virt_disk_priv *priv = iodev->priv;
 	struct r5sim_machine *mach = iodev->mach;
 
-	uint32_t dram_addr  = __vdisk_read_state(priv, VDISK_DRAM_ADDR);
-	uint32_t page_start = __vdisk_read_state(priv, VDISK_PAGE_START);
-	uint32_t pages      = __vdisk_read_state(priv, VDISK_PAGES);
-	uint32_t op         = __vdisk_read_state(priv, VDISK_OP);
+	u32 dram_addr  = __vdisk_read_state(priv, VDISK_DRAM_ADDR);
+	u32 page_start = __vdisk_read_state(priv, VDISK_PAGE_START);
+	u32 pages      = __vdisk_read_state(priv, VDISK_PAGES);
+	u32 op         = __vdisk_read_state(priv, VDISK_OP);
 
 	if ((op & VDISK_OP_COPY_TO_DRAM) == 0 &&
 	    (op & VDISK_OP_COPY_TO_DISK) == 0) {
@@ -124,7 +124,7 @@ virt_disk_exec_op(struct r5sim_iodev *iodev)
 
 static void
 virt_disk_writel(struct r5sim_iodev *iodev,
-		 uint32_t offs, uint32_t val)
+		 u32 offs, u32 val)
 {
 	vdisk_dbg("STORE @ %-17s v=0x%08x\n",
 		  vdisk_reg_to_str(offs), val);
@@ -213,7 +213,7 @@ static struct r5sim_iodev virtual_disk = {
 
 struct r5sim_iodev *
 r5sim_vdisk_load_new(struct r5sim_machine *mach,
-		     uint32_t io_offs, const char *path)
+		     u32 io_offs, const char *path)
 {
 	struct r5sim_iodev *dev;
 	struct virt_disk_priv *priv;

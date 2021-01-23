@@ -37,8 +37,8 @@ exec_load(struct r5sim_machine *mach,
 	  const r5_inst *__inst)
 {
 	const r5_inst_i *inst = (const r5_inst_i *)__inst;
-	uint32_t paddr_src;
-	uint32_t w = 0;
+	u32 paddr_src;
+	u32 w = 0;
 
 	paddr_src = core->reg_file[inst->rs1] +
 		sign_extend(inst->imm_11_0, 11);
@@ -49,13 +49,13 @@ exec_load(struct r5sim_machine *mach,
 	switch (inst->func3) {
 	case 0x0: /* LB */
 		/* Since there's no MMU this can't really trap... */
-		if (mach->memload8(mach, paddr_src, (uint8_t *)(&w)))
+		if (mach->memload8(mach, paddr_src, (u8 *)(&w)))
 			return TRAP_LD_ADDR_MISLAIGN;
 		w = sign_extend(w, 7);
 		__set_reg(core, inst->rd, w);
 		break;
 	case 0x1: /* LH */
-		if (mach->memload16(mach, paddr_src, (uint16_t *)(&w)))
+		if (mach->memload16(mach, paddr_src, (u16 *)(&w)))
 			return TRAP_LD_ADDR_MISLAIGN;
 		w = sign_extend(w, 15);
 		__set_reg(core, inst->rd, w);
@@ -66,12 +66,12 @@ exec_load(struct r5sim_machine *mach,
 		__set_reg(core, inst->rd, w);
 		break;
 	case 0x4: /* LBU */
-		if (mach->memload8(mach, paddr_src, (uint8_t *)(&w)))
+		if (mach->memload8(mach, paddr_src, (u8 *)(&w)))
 			return TRAP_LD_ADDR_MISLAIGN;
 		__set_reg(core, inst->rd, w);
 		break;
 	case 0x5: /* LHU */
-		if (mach->memload16(mach, paddr_src, (uint16_t *)(&w)))
+		if (mach->memload16(mach, paddr_src, (u16 *)(&w)))
 			return TRAP_LD_ADDR_MISLAIGN;
 		__set_reg(core, inst->rd, w);
 		break;
@@ -95,8 +95,8 @@ exec_store(struct r5sim_machine *mach,
 	    const r5_inst *__inst)
 {
 	const r5_inst_s *inst = (const r5_inst_s *)__inst;
-	uint32_t imm;
-	uint32_t paddr_dst;
+	u32 imm;
+	u32 paddr_dst;
 
 	imm = sign_extend((inst->imm_11_5 << 5) | inst->imm_4_0, 11);
 	paddr_dst = __get_reg(core, inst->rs1) + imm;
@@ -104,12 +104,12 @@ exec_store(struct r5sim_machine *mach,
 	switch (inst->func3) {
 	case 0x0: /* SB */
 		if (mach->memstore8(mach, paddr_dst,
-				    (uint8_t)core->reg_file[inst->rs2]))
+				    (u8)core->reg_file[inst->rs2]))
 			return TRAP_LD_ADDR_MISLAIGN;
 		break;
 	case 0x1: /* SH */
 		if (mach->memstore16(mach, paddr_dst,
-				     (uint16_t)core->reg_file[inst->rs2]))
+				     (u16)core->reg_file[inst->rs2]))
 		    return TRAP_LD_ADDR_MISLAIGN;
 		break;
 	case 0x2: /* SW */
@@ -137,8 +137,8 @@ exec_op_imm(struct r5sim_machine *mach,
 	    const r5_inst *__inst)
 {
 	const r5_inst_i *inst = (const r5_inst_i *)__inst;
-	uint32_t imm = sign_extend(inst->imm_11_0, 11);
-	int32_t signed_imm = (int32_t)imm;
+	u32 imm = sign_extend(inst->imm_11_0, 11);
+	s32 signed_imm = (s32)imm;
 
 	switch (inst->func3) {
 	case 0x0: /* ADDI */
@@ -151,7 +151,7 @@ exec_op_imm(struct r5sim_machine *mach,
 		break;
 	case 0x2: /* SLTI */
 		__set_reg(core, inst->rd,
-			  ((int32_t)__get_reg(core, inst->rs1)) < signed_imm ? 1 : 0);
+			  ((s32)__get_reg(core, inst->rs1)) < signed_imm ? 1 : 0);
 		break;
 	case 0x3: /* SLTIU */
 		__set_reg(core, inst->rd,
@@ -169,7 +169,7 @@ exec_op_imm(struct r5sim_machine *mach,
 		 */
 		if (inst->imm_11_0 & (1 << 9))
 			__set_reg(core, inst->rd,
-				  ((int32_t)__get_reg(core, inst->rs1)) >>
+				  ((s32)__get_reg(core, inst->rs1)) >>
 				  (imm & 0x1f));
 		else
 			__set_reg(core, inst->rd,
@@ -216,8 +216,8 @@ exec_op_i(struct r5sim_machine *mach,
 		break;
 	case 0x2: /* SLT */
 		__set_reg(core, inst->rd,
-			  ((int32_t) __get_reg(core, inst->rs1)) <
-			  ((int32_t) __get_reg(core, inst->rs2)) ?
+			  ((s32) __get_reg(core, inst->rs1)) <
+			  ((s32) __get_reg(core, inst->rs2)) ?
 			  1 : 0);
 		break;
 	case 0x3: /* SLTU */
@@ -238,7 +238,7 @@ exec_op_i(struct r5sim_machine *mach,
 			 * shifting on signed types.
 			 */
 			__set_reg(core, inst->rd,
-				  ((int32_t)__get_reg(core, inst->rs1)) >>
+				  ((s32)__get_reg(core, inst->rs1)) >>
 				  (__get_reg(core, inst->rs2) & 0x1f));
 		} else { /* SRL */
 			__set_reg(core, inst->rd,
@@ -277,32 +277,32 @@ exec_op_m(struct r5sim_machine *mach,
 
 	switch (inst->func3) {
 	case 0x0: /* MUL */
-		sproduct = (int32_t)__get_reg(core, inst->rs1) *
-			   (int32_t)__get_reg(core, inst->rs2);
-		__set_reg(core, inst->rd, (uint32_t)(sproduct & 0xffffffff));
+		sproduct = (s32)__get_reg(core, inst->rs1) *
+			   (s32)__get_reg(core, inst->rs2);
+		__set_reg(core, inst->rd, (u32)(sproduct & 0xffffffff));
 		break;
 	case 0x1: /* MULH */
 		sproduct = sign_extend_64(__get_reg(core, inst->rs1), 31) *
 			   sign_extend_64(__get_reg(core, inst->rs2), 31);
 		__set_reg(core, inst->rd,
-			  (uint32_t)((sproduct >> 32) & 0xffffffff));
+			  (u32)((sproduct >> 32) & 0xffffffff));
 		break;
 	case 0x2: /* MULHSU */
 		sproduct = sign_extend_64(__get_reg(core, inst->rs1), 31) *
 			   __get_reg(core, inst->rs2);
 		__set_reg(core, inst->rd,
-			  (uint32_t)((sproduct >> 32) & 0xffffffff));
+			  (u32)((sproduct >> 32) & 0xffffffff));
 		break;
 	case 0x3: /* MULHU */
 		uproduct = ((uint64_t)__get_reg(core, inst->rs1)) *
 			   ((uint64_t)__get_reg(core, inst->rs2));
 		__set_reg(core, inst->rd,
-			  (uint32_t)((uproduct >> 32) & 0xffffffff));
+			  (u32)((uproduct >> 32) & 0xffffffff));
 		break;
 	case 0x4: /* DIV */
-		__set_reg(core, inst->rd, (uint32_t)
-			  (((int32_t)__get_reg(core, inst->rs1)) /
-			   ((int32_t)__get_reg(core, inst->rs2))));
+		__set_reg(core, inst->rd, (u32)
+			  (((s32)__get_reg(core, inst->rs1)) /
+			   ((s32)__get_reg(core, inst->rs2))));
 		break;
 	case 0x5: /* DIVU */
 		__set_reg(core, inst->rd,
@@ -310,9 +310,9 @@ exec_op_m(struct r5sim_machine *mach,
 			  __get_reg(core, inst->rs2));
 		break;
 	case 0x6: /* REM */
-		__set_reg(core, inst->rd, (uint32_t)
-			  ((int32_t)__get_reg(core, inst->rs1) %
-			   (int32_t)__get_reg(core, inst->rs2)));
+		__set_reg(core, inst->rd, (u32)
+			  ((s32)__get_reg(core, inst->rs1) %
+			   (s32)__get_reg(core, inst->rs2)));
 		break;
 	case 0x7: /* REMU */
 		__set_reg(core, inst->rd,
@@ -349,8 +349,8 @@ exec_jal(struct r5sim_machine *mach,
 	 const r5_inst *__inst)
 {
 	const r5_inst_j *inst = (const r5_inst_j *)__inst;
-	uint32_t lr = core->pc + 4;
-	uint32_t offset;
+	u32 lr = core->pc + 4;
+	u32 offset;
 
 	__set_reg(core, inst->rd, lr);
 
@@ -373,7 +373,7 @@ exec_jalr(struct r5sim_machine *mach,
 	  const r5_inst *__inst)
 {
 	const r5_inst_i *inst = (const r5_inst_i *)__inst;
-	uint32_t lr = core->pc + 4;
+	u32 lr = core->pc + 4;
 
 	/* Set link register. */
 	__set_reg(core, inst->rd, lr);
@@ -396,8 +396,8 @@ exec_branch(struct r5sim_machine *mach,
 	    const r5_inst *__inst)
 {
 	const r5_inst_b *inst = (const r5_inst_b *)__inst;
-	uint32_t rs1, rs2;
-	uint32_t offset = 0;
+	u32 rs1, rs2;
+	u32 offset = 0;
 	int take_branch = 0;
 
 	rs1 = __get_reg(core, inst->rs1);
@@ -411,10 +411,10 @@ exec_branch(struct r5sim_machine *mach,
 		take_branch = rs1 != rs2;
 		break;
 	case 0x4: /* BLT */
-		take_branch = ((int32_t)rs1) < ((int32_t)rs2);
+		take_branch = ((s32)rs1) < ((s32)rs2);
 		break;
 	case 0x5: /* BGE */
-		take_branch = ((int32_t)rs1) >= ((int32_t)rs2);
+		take_branch = ((s32)rs1) >= ((s32)rs2);
 		break;;
 	case 0x6: /* BLTU */
 		take_branch = rs1 < rs2;
@@ -460,7 +460,7 @@ exec_auipc(struct r5sim_machine *mach,
 	   const r5_inst *__inst)
 {
 	const r5_inst_u *inst = (const r5_inst_u *)__inst;
-	uint32_t *inst_u32 = (uint32_t *)__inst;
+	u32 *inst_u32 = (u32 *)__inst;
 
 	__set_reg(core, inst->rd,
 		  (*inst_u32 & 0xfffff000) + core->pc);
@@ -479,7 +479,7 @@ exec_lui(struct r5sim_machine *mach,
 	 const r5_inst *__inst)
 {
 	const r5_inst_u *inst = (const r5_inst_u *)__inst;
-	uint32_t *inst_u32 = (uint32_t *)__inst;
+	u32 *inst_u32 = (u32 *)__inst;
 
 	__set_reg(core, inst->rd, *inst_u32 & 0xfffff000);
 
@@ -496,7 +496,7 @@ exec_system(struct r5sim_machine *mach,
 	    const r5_inst *__inst)
 {
 	const r5_inst_i *inst = (const r5_inst_i *)__inst;
-	const uint32_t csr = inst->imm_11_0;
+	const u32 csr = inst->imm_11_0;
 	int ret = 0;
 
 	switch (inst->func3) {
@@ -604,7 +604,7 @@ static struct r5_op_family op_families[32] = {
 static struct r5_op_family *
 simple_core_opcode_fam(r5_inst *inst)
 {
-	uint32_t type_bits = (inst->opcode & 0x7c) >> 2;
+	u32 type_bits = (inst->opcode & 0x7c) >> 2;
 
 	return &op_families[type_bits];
 }
@@ -624,9 +624,9 @@ simple_core_opcode_fam(r5_inst *inst)
 static int simple_core_exec_one(struct r5sim_machine *mach,
 				struct r5sim_core *core)
 {
-	uint32_t inst_mem;
+	u32 inst_mem;
 	struct r5_op_family *fam;
-	uint32_t op_type;
+	u32 op_type;
 	r5_inst *inst;
 	int strap;
 

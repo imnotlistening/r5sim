@@ -5,7 +5,7 @@
 #ifndef __R5SIM_ISA_H__
 #define __R5SIM_ISA_H__
 
-#include <stdint.h>
+#include <r5sim/env.h>
 
 struct r5sim_machine;
 struct r5sim_core;
@@ -14,67 +14,67 @@ struct r5sim_core;
  * R-type instruction.
  */
 typedef struct __r5_inst_r {
-	uint32_t opcode:7;
+	u32 opcode:7;
 
-	uint32_t rd:5;
-	uint32_t func3:3;
-	uint32_t rs1:5;
-	uint32_t rs2:5;
-	uint32_t func7:7;
+	u32 rd:5;
+	u32 func3:3;
+	u32 rs1:5;
+	u32 rs2:5;
+	u32 func7:7;
 } r5_inst_r;
 
 typedef struct __r5_inst_i {
-	uint32_t opcode:7;
+	u32 opcode:7;
 
-	uint32_t rd:5;
-	uint32_t func3:3;
-	uint32_t rs1:5;
-	uint32_t imm_11_0:12;
+	u32 rd:5;
+	u32 func3:3;
+	u32 rs1:5;
+	u32 imm_11_0:12;
 } r5_inst_i;
 
 typedef struct __r5_inst_s {
-	uint32_t opcode:7;
+	u32 opcode:7;
 
-	uint32_t imm_4_0:5;
-	uint32_t func3:3;
-	uint32_t rs1:5;
-	uint32_t rs2:5;
-	uint32_t imm_11_5:7;
+	u32 imm_4_0:5;
+	u32 func3:3;
+	u32 rs1:5;
+	u32 rs2:5;
+	u32 imm_11_5:7;
 } r5_inst_s;
 
 typedef struct __r5_inst_b {
-	uint32_t opcode:7;
+	u32 opcode:7;
 
-	uint32_t imm_11:1;
-	uint32_t imm_4_1:4;
-	uint32_t func3:3;
-	uint32_t rs1:5;
-	uint32_t rs2:5;
-	uint32_t imm_10_5:6;
-	uint32_t imm_12:1;
+	u32 imm_11:1;
+	u32 imm_4_1:4;
+	u32 func3:3;
+	u32 rs1:5;
+	u32 rs2:5;
+	u32 imm_10_5:6;
+	u32 imm_12:1;
 } r5_inst_b;
 
 typedef struct __r5_inst_u {
-	uint32_t opcode:7;
+	u32 opcode:7;
 
-	uint32_t rd:5;
-	uint32_t imm_31_12:20;
+	u32 rd:5;
+	u32 imm_31_12:20;
 } r5_inst_u;
 
 typedef struct __r5_inst_j {
-	uint32_t opcode:7;
+	u32 opcode:7;
 
-	uint32_t rd:5;
-	uint32_t imm_19_12:8;
-	uint32_t imm_11:1;
-	uint32_t imm_10_1:10;
-	uint32_t imm_20:1;
+	u32 rd:5;
+	u32 imm_19_12:8;
+	u32 imm_11:1;
+	u32 imm_10_1:10;
+	u32 imm_20:1;
 } r5_inst_j;
 
 typedef struct __r5_inst {
-	uint32_t opcode:7;
+	u32 opcode:7;
 
-	uint32_t inst_data:25;
+	u32 inst_data:25;
 } r5_inst;
 
 #define R5_OP_TYPE_UNKNOWN	0x0
@@ -87,7 +87,7 @@ typedef struct __r5_inst {
 
 struct r5_op_family {
 	const char       *op_name;
-	const uint32_t    op_type;
+	const u32    op_type;
 
 	int               incr_pc;
 

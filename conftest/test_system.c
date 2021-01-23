@@ -7,8 +7,8 @@
 static int
 ct_test_rdcycle(void *data)
 {
-	uint32_t cycles, cycles_end;
-	uint32_t a = 4, b = 6;
+	u32 cycles, cycles_end;
+	u32 a = 4, b = 6;
 
 	cycles = ct_rdcycle();
 	barrier();
@@ -22,8 +22,8 @@ ct_test_rdcycle(void *data)
 static int
 ct_test_rdinstret(void *data)
 {
-	uint32_t instret, instret_end;
-	uint32_t a = 4, b = 6;
+	u32 instret, instret_end;
+	u32 a = 4, b = 6;
 
 	instret = ct_rdinstret();
 	barrier();

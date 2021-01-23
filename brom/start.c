@@ -8,7 +8,7 @@
 #include <r5sim/hw/vuart.h>
 #include <r5sim/hw/vdisk.h>
 
-typedef unsigned int uint32_t;
+typedef unsigned int u32;
 
 typedef void (*blcall)(void);
 
@@ -23,8 +23,8 @@ typedef void (*blcall)(void);
 /*
  * No need for barriers on the simple_core.
  */
-#define readl(addr)		*((uint32_t *)(addr))
-#define writel(addr, val)	*((uint32_t *)(addr)) = (uint32_t)(val)
+#define readl(addr)		*((u32 *)(addr))
+#define writel(addr, val)	*((u32 *)(addr)) = (u32)(val)
 
 /*
  * For now just sit in an infinite loop.
@@ -63,12 +63,12 @@ brom_puts(char *str)
  * Load a page from the vdisk and place it at dest.
  */
 static void
-load_disk_page(uint32_t dest, uint32_t offset)
+load_disk_page(u32 dest, u32 offset)
 {
 	/*
 	 * Configure op.
 	 */
-	writel(VDISK_BASE + VDISK_DRAM_ADDR,  (uint32_t)dest);
+	writel(VDISK_BASE + VDISK_DRAM_ADDR,  (u32)dest);
 	writel(VDISK_BASE + VDISK_PAGE_START, offset);
 	writel(VDISK_BASE + VDISK_PAGES,      1);
 	writel(VDISK_BASE + VDISK_OP,         VDISK_OP_COPY_TO_DRAM);
@@ -91,9 +91,9 @@ load_disk_page(uint32_t dest, uint32_t offset)
 static void
 load_bootloader(void)
 {
-	uint32_t vdisk_pgsz = readl(VDISK_BASE + VDISK_PAGE_SIZE);
-	uint32_t dram_base = 0x20000000;
-	uint32_t offset, page;
+	u32 vdisk_pgsz = readl(VDISK_BASE + VDISK_PAGE_SIZE);
+	u32 dram_base = 0x20000000;
+	u32 offset, page;
 	blcall start;
 
 	brom_puts("Loading bootloader to DRAM start @ 0x20000000\n");

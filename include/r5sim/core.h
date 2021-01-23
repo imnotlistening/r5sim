@@ -17,8 +17,8 @@ struct r5sim_core;
 struct r5sim_core {
 	const char           *name;
 
-	uint32_t              reg_file[32];
-	uint32_t              pc;
+	u32                   reg_file[32];
+	u32                   pc;
 
 	struct r5sim_csr      csr_file[4096];
 
@@ -43,8 +43,7 @@ struct r5sim_core {
 };
 
 static inline void
-__set_reg(struct r5sim_core *core,
-	  uint32_t reg, uint32_t val)
+__set_reg(struct r5sim_core *core, u32 reg, u32 val)
 {
 	r5sim_assert(reg < 32);
 
@@ -55,8 +54,8 @@ __set_reg(struct r5sim_core *core,
 	core->reg_file[reg] = val;
 }
 
-static inline uint32_t
-__get_reg(struct r5sim_core *core, uint32_t reg)
+static inline u32
+__get_reg(struct r5sim_core *core, u32 reg)
 {
 	r5sim_assert(reg < 32);
 
@@ -69,7 +68,7 @@ r5sim_core_init_common(struct r5sim_core *core);
 void
 r5sim_core_exec(struct r5sim_machine *mach,
 		struct r5sim_core *core,
-		uint32_t pc);
+		u32 pc);
 
 /*
  * Ask the core to execute a trap.
@@ -81,26 +80,26 @@ r5sim_core_exec(struct r5sim_machine *mach,
 int
 r5sim_core_trap(struct r5sim_machine *mach,
 		struct r5sim_core *core,
-		uint32_t code);
+		u32 code);
 
 const char *
-r5sim_reg_to_abi_str(uint32_t reg);
+r5sim_reg_to_abi_str(u32 reg);
 const char *
-r5sim_reg_to_str(uint32_t reg);
+r5sim_reg_to_str(u32 reg);
 const char *
-r5sim_load_func3_to_str(uint32_t func3);
+r5sim_load_func3_to_str(u32 func3);
 const char *
-r5sim_store_func3_to_str(uint32_t func3);
+r5sim_store_func3_to_str(u32 func3);
 const char *
-r5sim_op_imm_func3_to_str(uint32_t func3);
+r5sim_op_imm_func3_to_str(u32 func3);
 const char *
-r5sim_op_i_func3_to_str(uint32_t func3, uint32_t func7);
+r5sim_op_i_func3_to_str(u32 func3, u32 func7);
 const char *
-r5sim_op_m_func3_to_str(uint32_t func3);
+r5sim_op_m_func3_to_str(u32 func3);
 const char *
-r5sim_branch_func3_to_str(uint32_t func3);
+r5sim_branch_func3_to_str(u32 func3);
 const char *
-r5sim_system_func3_to_str(uint32_t func3, uint32_t csr);
+r5sim_system_func3_to_str(u32 func3, u32 csr);
 
 void
 r5sim_core_describe(struct r5sim_core *core);

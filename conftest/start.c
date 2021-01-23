@@ -15,7 +15,7 @@ static ct_test_list_fn submodules[] = {
 };
 
 static void
-ct_run_test_submodule(ct_test_list_fn fn, uint32_t *pass, uint32_t *fail)
+ct_run_test_submodule(ct_test_list_fn fn, u32 *pass, u32 *fail)
 {
 	const struct ct_test *tests;
 	int ret;
@@ -63,11 +63,11 @@ void ct_ptime(struct ct_time *t, const char *str)
 void
 start(void)
 {
-	uint32_t pass_total = 0, pass;
-	uint32_t fail_total = 0, fail;
+	u32 pass_total = 0, pass;
+	u32 fail_total = 0, fail;
 	ct_test_list_fn *submodule = submodules;
 	struct ct_time start, end, diff;
-	uint32_t cycles_start, cycles_end;
+	u32 cycles_start, cycles_end;
 
 	ct_rdtime(&start);
 	cycles_start = ct_rdcycle();

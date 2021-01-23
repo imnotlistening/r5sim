@@ -6,7 +6,7 @@
 #include "conftest.h"
 
 static const char *
-code_to_str(uint32_t code)
+code_to_str(u32 code)
 {
 	switch (code) {
 	case TRAP_ILLEGAL_INST:
@@ -21,8 +21,8 @@ code_to_str(uint32_t code)
 int
 trap_setup(void)
 {
-	uint32_t mtvec;
-	uint32_t tvec = (uint32_t)&__trap_vector;
+	u32 mtvec;
+	u32 tvec = (u32)&__trap_vector;
 
 	tvec <<= 2;
 
@@ -49,7 +49,7 @@ trap_test(void)
 }
 
 void
-trap_entrance(uint32_t trap_pc, uint32_t code)
+trap_entrance(u32 trap_pc, u32 code)
 {
 	printf(" -- Received a trap: %u (%s)!\n", code, code_to_str(code));
 	printf(" -- Old PC: 0x%08x!\n", trap_pc);

@@ -31,15 +31,15 @@ struct ct_test {
 	}
 
 struct ct_time {
-	uint32_t lo;
-	uint32_t hi;
+	u32 lo;
+	u32 hi;
 };
 
 /*
  * No need for barriers on the simple_core.
  */
-#define readl(addr)		*((uint32_t *)(addr))
-#define writel(addr, val)	*((uint32_t *)(addr)) = (uint32_t)(val)
+#define readl(addr)		*((u32 *)(addr))
+#define writel(addr, val)	*((u32 *)(addr)) = (u32)(val)
 
 /* Compiler barrier. */
 #define barrier()		asm volatile("": : :"memory")
@@ -53,7 +53,7 @@ trap_setup(void);
 int
 trap_test(void);
 void
-trap_entrance(uint32_t trap_pc, uint32_t cause);
+trap_entrance(u32 trap_pc, u32 cause);
 void
 __trap_vector(void);
 
@@ -65,9 +65,9 @@ ct_ptime(struct ct_time *t, const char *str);
 /*
  * Defined in conftest.S
  */
-uint32_t
+u32
 ct_rdcycle(void);
-uint32_t
+u32
 ct_rdinstret(void);
 void
 ct_rdtime(struct ct_time *time);
@@ -91,9 +91,9 @@ ct_op(void);
  * is aimed at ops that take 3 register arguments.
  */
 struct ct_op {
-	uint32_t a;
-	uint32_t b;
-	uint32_t answer;
+	u32 a;
+	u32 b;
+	u32 answer;
 };
 
 #define test_op(name, __a, __b, __answer)	\
@@ -108,7 +108,7 @@ struct ct_op {
 	ct_test_##op(void *data)			\
 	{						\
 		struct ct_op *test = data;		\
-		uint32_t res;				\
+		u32 res;				\
 							\
 		asm(#op "	%0, %1, %2\n\t"		\
 		    : "=r" (res)			\

@@ -12,6 +12,6 @@ struct r5sim_machine;
 
 struct r5sim_iodev *
 r5sim_vuart_load_new(struct r5sim_machine *mach,
-		     uint32_t io_offs);
+		     u32 io_offs);
 
 #endif

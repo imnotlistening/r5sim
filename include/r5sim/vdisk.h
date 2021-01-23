@@ -12,6 +12,6 @@ struct r5sim_machine;
 
 struct r5sim_iodev *
 r5sim_vdisk_load_new(struct r5sim_machine *mach,
-		     uint32_t io_offs, const char *path);
+		     u32 io_offs, const char *path);
 
 #endif

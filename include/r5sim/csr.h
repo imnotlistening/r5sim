@@ -14,8 +14,8 @@ typedef void (*r5sim_csr_fn)(struct r5sim_core *core,
 			     struct r5sim_csr *csr);
 
 struct r5sim_csr {
-	uint32_t	value;
-	uint32_t	flags;
+	u32	value;
+	u32	flags;
 #define CSR_F_PRESENT	0x1
 #define CSR_F_READ	0x2
 #define CSR_F_WRITE	0x4
@@ -23,9 +23,9 @@ struct r5sim_csr {
 	r5sim_csr_fn	read_fn;
 	r5sim_csr_fn	write_fn;
 
-	uint32_t	wpri_mask;
-	uint32_t	wlrl_mask;
-	uint32_t	warl_mask;
+	u32	wpri_mask;
+	u32	wlrl_mask;
+	u32	warl_mask;
 };
 
 /*
@@ -85,45 +85,45 @@ struct r5sim_csr {
 		__r5sim_core_add_csr(core, &csr, __csr);		\
 	} while (0)
 
-uint32_t
-csr_read(struct r5sim_core *core, uint32_t csr);
+u32
+csr_read(struct r5sim_core *core, u32 csr);
 void
-csr_write(struct r5sim_core *core, uint32_t csr, uint32_t value);
+csr_write(struct r5sim_core *core, u32 csr, u32 value);
 
-static inline uint32_t
+static inline u32
 __raw_csr_read(struct r5sim_csr *csr)
 {
 	return csr->value;
 }
 
 static inline void
-__raw_csr_write(struct r5sim_csr *csr, uint32_t value)
+__raw_csr_write(struct r5sim_csr *csr, u32 value)
 {
 	csr->value = value;
 }
 
 static inline void
-__raw_csr_set_mask(struct r5sim_csr *csr, uint32_t value)
+__raw_csr_set_mask(struct r5sim_csr *csr, u32 value)
 {
 	csr->value |= value;
 }
 
 static inline void
-__raw_csr_clear_mask(struct r5sim_csr *csr, uint32_t value)
+__raw_csr_clear_mask(struct r5sim_csr *csr, u32 value)
 {
 	csr->value &= ~value;
 }
 
 void
-__csr_w(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr);
+__csr_w(struct r5sim_core *core, u32 rd, u32 value, u32 csr);
 void
-__csr_s(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr);
+__csr_s(struct r5sim_core *core, u32 rd, u32 value, u32 csr);
 void
-__csr_c(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr);
+__csr_c(struct r5sim_core *core, u32 rd, u32 value, u32 csr);
 
 void
 __r5sim_core_add_csr(struct r5sim_core *core,
 		     struct r5sim_csr *csr_reg,
-		     uint32_t csr);
+		     u32 csr);
 
 #endif

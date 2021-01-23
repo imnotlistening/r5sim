@@ -30,41 +30,41 @@
 /*
  * Load a word from a given memory space.
  */
-static uint32_t
-__load_word(uint32_t *mem, uint32_t paddr, uint32_t base)
+static u32
+__load_word(u32 *mem, u32 paddr, u32 base)
 {
 	return mem[(paddr - base) >> 2];
 }
 
-static uint32_t
-__load_half(uint16_t *mem, uint32_t paddr, uint32_t base)
+static u32
+__load_half(u16 *mem, u32 paddr, u32 base)
 {
 	return mem[(paddr - base) >> 1];
 }
 
-static uint32_t
-__load_byte(uint8_t *mem, uint32_t paddr, uint32_t base)
+static u32
+__load_byte(u8 *mem, u32 paddr, u32 base)
 {
 	return mem[paddr - base];
 }
 
 static void
-__write_word(uint32_t *mem, uint32_t paddr,
-	     uint32_t base, uint32_t v)
+__write_word(u32 *mem, u32 paddr,
+	     u32 base, u32 v)
 {
 	mem[(paddr - base) >> 2] = v;
 }
 
 static void
-__write_half(uint16_t *mem, uint32_t paddr,
-	     uint32_t base, uint16_t v)
+__write_half(u16 *mem, u32 paddr,
+	     u32 base, u16 v)
 {
 	mem[(paddr - base) >> 1] = v;
 }
 
 static void
-__write_byte(uint8_t *mem, uint32_t paddr,
-	     uint32_t base, uint8_t v)
+__write_byte(u8 *mem, u32 paddr,
+	     u32 base, u8 v)
 {
 	mem[paddr - base] = v;
 }
@@ -72,12 +72,12 @@ __write_byte(uint8_t *mem, uint32_t paddr,
 /*
  * IO memory is always accessed at 4 byte boundaries.
  */
-static uint32_t
+static u32
 r5sim_default_io_memload(struct r5sim_machine *mach,
-			 uint32_t paddr)
+			 u32 paddr)
 {
 	struct r5sim_iodev *dev;
-	uint32_t io_paddr = paddr - mach->iomem_base;
+	u32 io_paddr = paddr - mach->iomem_base;
 
 	/*
 	 * Loop through the devices and find a device to access.
@@ -99,11 +99,11 @@ r5sim_default_io_memload(struct r5sim_machine *mach,
 
 static void
 r5sim_default_io_memstore(struct r5sim_machine *mach,
-			  uint32_t paddr,
-			  uint32_t value)
+			  u32 paddr,
+			  u32 value)
 {
 	struct r5sim_iodev *dev;
-	uint32_t io_paddr = paddr - mach->iomem_base;
+	u32 io_paddr = paddr - mach->iomem_base;
 
 	/*
 	 * Loop through the devices and find a device to access.
@@ -125,8 +125,8 @@ r5sim_default_io_memstore(struct r5sim_machine *mach,
 
 static int
 r5sim_default_memload32(struct r5sim_machine *mach,
-			uint32_t paddr,
-			uint32_t *dest)
+			u32 paddr,
+			u32 *dest)
 {
 	/*
 	 * Check alignment; we don't support unaligned loads.
@@ -140,12 +140,12 @@ r5sim_default_memload32(struct r5sim_machine *mach,
 	if (addr_in(mach->memory_base,
 		    mach->memory_size,
 		    paddr))
-		*dest = __load_word((uint32_t *)mach->memory,
+		*dest = __load_word((u32 *)mach->memory,
 				    paddr, mach->memory_base);
 	else if (addr_in(mach->brom_base,
 			 mach->brom_size,
 			 paddr))
-		*dest =  __load_word((uint32_t *)mach->brom,
+		*dest =  __load_word((u32 *)mach->brom,
 				     paddr, mach->brom_base);
 	else if (addr_in(mach->iomem_base,
 			 mach->iomem_size,
@@ -162,8 +162,8 @@ r5sim_default_memload32(struct r5sim_machine *mach,
 
 static int
 r5sim_default_memload16(struct r5sim_machine *mach,
-			uint32_t paddr,
-			uint16_t *dest)
+			u32 paddr,
+			u16 *dest)
 {
 	if (paddr & 0x1)
 		return ML_ALIGN_FAULT;
@@ -172,12 +172,12 @@ r5sim_default_memload16(struct r5sim_machine *mach,
 	if (addr_in(mach->memory_base,
 		    mach->memory_size,
 		    paddr))
-		*dest = __load_half((uint16_t *)mach->memory,
+		*dest = __load_half((u16 *)mach->memory,
 				    paddr, mach->memory_base);
 	else if (addr_in(mach->brom_base,
 			 mach->brom_size,
 			 paddr))
-		*dest = __load_half((uint16_t *)mach->brom,
+		*dest = __load_half((u16 *)mach->brom,
 				    paddr, mach->brom_base);
 	else {
 		r5sim_core_describe(mach->core);
@@ -190,8 +190,8 @@ r5sim_default_memload16(struct r5sim_machine *mach,
 
 static int
 r5sim_default_memload8(struct r5sim_machine *mach,
-		       uint32_t paddr,
-		       uint8_t *dest)
+		       u32 paddr,
+		       u8 *dest)
 {
 	/* Don't allow non-word aligned IO accesses! */
 	if (addr_in(mach->memory_base,
@@ -215,8 +215,8 @@ r5sim_default_memload8(struct r5sim_machine *mach,
 
 static int
 r5sim_default_memstore32(struct r5sim_machine *mach,
-			 uint32_t paddr,
-			 uint32_t value)
+			 u32 paddr,
+			 u32 value)
 {
 	if (paddr & 0x3)
 		return ML_ALIGN_FAULT;
@@ -227,7 +227,7 @@ r5sim_default_memstore32(struct r5sim_machine *mach,
 	if (addr_in(mach->memory_base,
 		    mach->memory_size,
 		    paddr))
-		__write_word((uint32_t *)mach->memory, paddr,
+		__write_word((u32 *)mach->memory, paddr,
 			     mach->memory_base, value);
 	else if (addr_in(mach->iomem_base,
 			 mach->iomem_size,
@@ -244,8 +244,8 @@ r5sim_default_memstore32(struct r5sim_machine *mach,
 
 static int
 r5sim_default_memstore16(struct r5sim_machine *mach,
-			 uint32_t paddr,
-			 uint16_t value)
+			 u32 paddr,
+			 u16 value)
 {
 	if (paddr & 0x1)
 		return ML_ALIGN_FAULT;
@@ -256,7 +256,7 @@ r5sim_default_memstore16(struct r5sim_machine *mach,
 	if (addr_in(mach->memory_base,
 		    mach->memory_size,
 		    paddr)) {
-		__write_half((uint16_t *)mach->memory, paddr,
+		__write_half((u16 *)mach->memory, paddr,
 			     mach->memory_base, value);
 	} else {
 		r5sim_core_describe(mach->core);
@@ -269,8 +269,8 @@ r5sim_default_memstore16(struct r5sim_machine *mach,
 
 static int
 r5sim_default_memstore8(struct r5sim_machine *mach,
-			 uint32_t paddr,
-			 uint8_t value)
+			 u32 paddr,
+			 u8 value)
 {
 	/*
 	 * No stores to BROM or to IO mem when not word aligned.
@@ -372,7 +372,7 @@ r5sim_machine_load_brom(struct r5sim_machine *mach)
 	struct r5sim_app_args *args = r5sim_app_get_args();
 	int brom_fd;
 	char brom_buf[128];
-	uint32_t brom_offs = 0;
+	u32 brom_offs = 0;
 
 	r5sim_assert(args->bootrom != NULL);
 
@@ -388,7 +388,7 @@ r5sim_machine_load_brom(struct r5sim_machine *mach)
 	 * We have a file; now load at most mach->brom_size bytes into brom.
 	 */
 	while (1) {
-		uint32_t max_bytes = min(mach->brom_size - brom_offs, 128);
+		u32 max_bytes = min(mach->brom_size - brom_offs, 128);
 		ssize_t bytes = read(brom_fd, brom_buf, max_bytes);
 
 		if (bytes == 0)

@@ -47,7 +47,7 @@ r5sim_core_incr(struct r5sim_core *core)
 void
 r5sim_core_exec(struct r5sim_machine *mach,
 		struct r5sim_core *core,
-		uint32_t pc)
+		u32 pc)
 {
 	core->pc = pc;
 
@@ -69,7 +69,7 @@ r5sim_core_exec(struct r5sim_machine *mach,
 		 * exception then just HALT for now. No nested trap
 		 * handling.
 		 */
-		if (r5sim_core_trap(mach, core, (uint32_t)strap))
+		if (r5sim_core_trap(mach, core, (u32)strap))
 			break;
 
 		/*
@@ -86,9 +86,9 @@ r5sim_core_exec(struct r5sim_machine *mach,
 static int
 r5sim_core_exec_trap(struct r5sim_machine *mach,
 		     struct r5sim_core *core,
-		     uint32_t pc)
+		     u32 pc)
 {
-	uint32_t ret;
+	u32 ret;
 
 	core->pc = pc;
 
@@ -140,10 +140,10 @@ r5sim_core_exec_trap(struct r5sim_machine *mach,
 int
 r5sim_core_trap(struct r5sim_machine *mach,
 		struct r5sim_core *core,
-		uint32_t code)
+		u32 code)
 {
-	uint32_t mtvec, base, mode;
-	uint32_t mcause = 0;
+	u32 mtvec, base, mode;
+	u32 mcause = 0;
 
 	set_field(mcause, CSR_MCAUSE_CODE, code);
 
@@ -210,19 +210,19 @@ static const char *reg_names[32] = {
 };
 
 const char *
-r5sim_reg_to_abi_str(uint32_t reg)
+r5sim_reg_to_abi_str(u32 reg)
 {
 	return reg_abi_names[reg];
 }
 
 const char *
-r5sim_reg_to_str(uint32_t reg)
+r5sim_reg_to_str(u32 reg)
 {
 	return reg_names[reg];
 }
 
 const char *
-r5sim_load_func3_to_str(uint32_t func3)
+r5sim_load_func3_to_str(u32 func3)
 {
 	switch (func3) {
 	case 0x0: /* LB */
@@ -241,7 +241,7 @@ r5sim_load_func3_to_str(uint32_t func3)
 };
 
 const char *
-r5sim_store_func3_to_str(uint32_t func3)
+r5sim_store_func3_to_str(u32 func3)
 {
 	switch (func3) {
 	case 0x0: /* SB */
@@ -256,7 +256,7 @@ r5sim_store_func3_to_str(uint32_t func3)
 }
 
 const char *
-r5sim_op_imm_func3_to_str(uint32_t func3)
+r5sim_op_imm_func3_to_str(u32 func3)
 {
 	switch (func3) {
 	case 0x0: /* ADDI */
@@ -281,7 +281,7 @@ r5sim_op_imm_func3_to_str(uint32_t func3)
 }
 
 const char *
-r5sim_op_i_func3_to_str(uint32_t func3, uint32_t func7)
+r5sim_op_i_func3_to_str(u32 func3, u32 func7)
 {
 	switch (func3) {
 	case 0x0: /* ADD, SUB */
@@ -306,7 +306,7 @@ r5sim_op_i_func3_to_str(uint32_t func3, uint32_t func7)
 }
 
 const char *
-r5sim_op_m_func3_to_str(uint32_t func3)
+r5sim_op_m_func3_to_str(u32 func3)
 {
 	switch (func3) {
 	case 0x0: /* MUL */
@@ -331,7 +331,7 @@ r5sim_op_m_func3_to_str(uint32_t func3)
 }
 
 const char *
-r5sim_branch_func3_to_str(uint32_t func3)
+r5sim_branch_func3_to_str(u32 func3)
 {
 	switch (func3) {
 	case 0x0: /* BEQ */
@@ -352,7 +352,7 @@ r5sim_branch_func3_to_str(uint32_t func3)
 }
 
 const char *
-r5sim_system_func3_to_str(uint32_t func3, uint32_t csr)
+r5sim_system_func3_to_str(u32 func3, u32 csr)
 {
 	switch (func3) {
 	case 0x0: /* ECALL, MRET. */

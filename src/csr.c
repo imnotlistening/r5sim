@@ -52,14 +52,14 @@ r5sim_csr_time(struct r5sim_core *core,
 
 	delta_ns = secs * 1000000000 + nsecs;
 
-	__raw_csr_write(&core->csr_file[CSR_TIME], (uint32_t)delta_ns);
-	__raw_csr_write(&core->csr_file[CSR_TIMEH], (uint32_t)(delta_ns >> 32));
+	__raw_csr_write(&core->csr_file[CSR_TIME], (u32)delta_ns);
+	__raw_csr_write(&core->csr_file[CSR_TIMEH], (u32)(delta_ns >> 32));
 }
 
 void
 __r5sim_core_add_csr(struct r5sim_core *core,
 		     struct r5sim_csr *csr_reg,
-		     uint32_t csr)
+		     u32 csr)
 {
 	r5sim_assert(csr < 4096);
 
@@ -117,7 +117,7 @@ r5sim_core_init_common(struct r5sim_core *core)
  * returns the address of ther CSR struct in the CSR file.
  */
 static struct r5sim_csr *
-__csr_always(struct r5sim_core *core, uint32_t rd, uint32_t csr)
+__csr_always(struct r5sim_core *core, u32 rd, u32 csr)
 {
 	struct r5sim_csr *csr_reg;
 
@@ -138,7 +138,7 @@ __csr_always(struct r5sim_core *core, uint32_t rd, uint32_t csr)
 }
 
 void
-__csr_w(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr)
+__csr_w(struct r5sim_core *core, u32 rd, u32 value, u32 csr)
 {
 	struct r5sim_csr *csr_reg;
 
@@ -154,7 +154,7 @@ __csr_w(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr)
 }
 
 void
-__csr_s(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr)
+__csr_s(struct r5sim_core *core, u32 rd, u32 value, u32 csr)
 {
 	struct r5sim_csr *csr_reg;
 
@@ -170,7 +170,7 @@ __csr_s(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr)
 }
 
 void
-__csr_c(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr)
+__csr_c(struct r5sim_core *core, u32 rd, u32 value, u32 csr)
 {
 	struct r5sim_csr *csr_reg;
 
@@ -185,8 +185,8 @@ __csr_c(struct r5sim_core *core, uint32_t rd, uint32_t value, uint32_t csr)
 	}
 }
 
-uint32_t
-csr_read(struct r5sim_core *core, uint32_t csr)
+u32
+csr_read(struct r5sim_core *core, u32 csr)
 {
 	r5sim_assert(csr < 4096);
 
@@ -194,7 +194,7 @@ csr_read(struct r5sim_core *core, uint32_t csr)
 }
 
 void
-csr_write(struct r5sim_core *core, uint32_t csr, uint32_t value)
+csr_write(struct r5sim_core *core, u32 csr, u32 value)
 {
 	r5sim_assert(csr < 4096);
 

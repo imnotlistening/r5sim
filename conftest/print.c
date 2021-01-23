@@ -30,7 +30,7 @@
 #define MAX(a, b)				\
 	(a > b ? a : b)
 
-static const uint32_t base10[] = {
+static const u32 base10[] = {
 	1,
 	10,
 	100,
@@ -84,7 +84,7 @@ is_space(char c)
 }
 
 static void
-__memset(void *__dst, int __byte, uint32_t bytes)
+__memset(void *__dst, int __byte, u32 bytes)
 {
 	char byte = (char)__byte;
 	char *dst = (char *)__dst;
@@ -95,7 +95,7 @@ __memset(void *__dst, int __byte, uint32_t bytes)
 }
 
 static void
-__memcpy(void *__dst, const void *__src, uint32_t bytes)
+__memcpy(void *__dst, const void *__src, u32 bytes)
 {
 	int i;
 	char *dst = (char *)__dst;
@@ -105,7 +105,7 @@ __memcpy(void *__dst, const void *__src, uint32_t bytes)
 		dst[i] = src[i];
 }
 
-static uint32_t
+static u32
 __strlen(const char *str)
 {
 	int length = 0;
@@ -116,18 +116,18 @@ __strlen(const char *str)
 	return length;
 }
 
-static uint32_t
-mul10(uint32_t value)
+static u32
+mul10(u32 value)
 {
-	uint32_t doubled = value + value;
+	u32 doubled = value + value;
 
 	return doubled + (doubled << 3);
 }
 
-static uint32_t
+static u32
 atou(const char *buf, int *consumed)
 {
-	uint32_t value = 0;
+	u32 value = 0;
 
 	*consumed = 0;
 
@@ -147,7 +147,7 @@ atou(const char *buf, int *consumed)
 }
 
 static void
-utostr_10(char *buf, uint32_t value)
+utostr_10(char *buf, u32 value)
 {
 	int digit = 9;
 	int i = 0;
@@ -181,10 +181,10 @@ utostr_10(char *buf, uint32_t value)
 }
 
 static void
-utostr_16(char *buf, uint32_t value)
+utostr_16(char *buf, u32 value)
 {
 	int nibble_offs = 28;
-	uint32_t nibble;
+	u32 nibble;
 	int i = 0;
 
 	__memset(buf, 0, PRINTF_TEMP_BUF_SIZE);
@@ -220,7 +220,7 @@ utostr_16(char *buf, uint32_t value)
  * Note that we have to do this without a division.
  */
 static int
-utostr(char *buf, uint32_t value, int base)
+utostr(char *buf, u32 value, int base)
 {
 	if (base != 10 && base != 16) {
 		printf("Bad base: %d\n", base);
@@ -237,11 +237,11 @@ utostr(char *buf, uint32_t value, int base)
 }
 
 static int
-printf_do_conversion(char *buf, uint32_t value,
+printf_do_conversion(char *buf, u32 value,
 		     int base,
-		     uint32_t flags,
-		     uint32_t width,
-		     uint32_t length)
+		     u32 flags,
+		     u32 width,
+		     u32 length)
 {
 	char *buf_ptr = buf;
 	char raw_conv_buf[PRINTF_TEMP_BUF_SIZE];
@@ -308,9 +308,9 @@ printf_do_conversion(char *buf, uint32_t value,
 
 static int
 printf_parse_conversion(const char **fmt,
-			uint32_t *flags,
-			uint32_t *width,
-			uint32_t *length)
+			u32 *flags,
+			u32 *width,
+			u32 *length)
 {
 	int consumed = 0;
 
@@ -373,7 +373,7 @@ printf_parse_conversion(const char **fmt,
 	return 0;
 }
 
-int printf_print_str(const char *str, uint32_t __width, uint32_t flags)
+int printf_print_str(const char *str, u32 __width, u32 flags)
 {
 	int i = 0;
 	int width = (int)__width;
@@ -397,8 +397,8 @@ printf(const char *fmt, ...)
 {
 	va_list args;
 	int bytes = 0;
-	uint32_t flags, width, length;
-	uint32_t value;
+	u32 flags, width, length;
+	u32 value;
 	char buf[PRINTF_TEMP_BUF_SIZE];
 	const char *str;
 
@@ -436,7 +436,7 @@ printf(const char *fmt, ...)
 		// printf("> Conv flag: %c\n", *fmt);
 		switch (*fmt++) {
 		case 'u':
-			value = va_arg(args, uint32_t);
+			value = va_arg(args, u32);
 			// printf("> Value: %u\n", value);
 			if (printf_do_conversion(buf, value, 10,
 						 flags, width, length))
@@ -446,7 +446,7 @@ printf(const char *fmt, ...)
 
 			break;
 		case 'x':
-			value = va_arg(args, uint32_t);
+			value = va_arg(args, u32);
 			if (printf_do_conversion(buf, value, 16,
 						 flags, width, length))
 				return bytes;
