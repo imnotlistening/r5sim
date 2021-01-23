@@ -9,7 +9,8 @@ INCLUDES  = -I$(R5SIM_DIR)/include
 LIBS      = -lutil
 
 BINS      = r5sim
-OBJS      = iodev.o machine.o vuart.o vdisk.o log.o core.o csr.o simple_core.o
+OBJS      = iodev.o machine.o log.o core.o csr.o simple_core.o
+OBJS      += vuart.o vdisk.o vsys.o
 
 CFLAGS    += -ggdb -O2 -Wall
 

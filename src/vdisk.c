@@ -17,7 +17,7 @@
 #include <r5sim/log.h>
 #include <r5sim/env.h>
 #include <r5sim/iodev.h>
-#include <r5sim/vdisk.h>
+#include <r5sim/vdevs.h>
 #include <r5sim/machine.h>
 
 #include <r5sim/hw/vdisk.h>
@@ -75,7 +75,6 @@ static u32 __vdisk_read_state(struct virt_disk_priv *disk, u32 __i)
 }
 
 static u32 virt_disk_readl(struct r5sim_iodev *iodev, u32 offs)
-
 {
 	vdisk_dbg("LOAD  @ %s\n",
 		  vdisk_reg_to_str(offs));

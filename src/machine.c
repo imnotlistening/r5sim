@@ -14,8 +14,7 @@
 #include <r5sim/list.h>
 #include <r5sim/core.h>
 #include <r5sim/util.h>
-#include <r5sim/vuart.h>
-#include <r5sim/vdisk.h>
+#include <r5sim/vdevs.h>
 #include <r5sim/iodev.h>
 #include <r5sim/machine.h>
 #include <r5sim/simple_core.h>
@@ -323,7 +322,7 @@ struct r5sim_machine *r5sim_machine_load_default(void)
 {
 	struct r5sim_app_args *args = r5sim_app_get_args();
 	struct r5sim_machine *mach = &default_machine;
-	struct r5sim_iodev *vuart;
+	struct r5sim_iodev *vuart, *vsys;
 
 	mach->core = r5sim_simple_core_instance(mach);
 
@@ -335,11 +334,23 @@ struct r5sim_machine *r5sim_machine_load_default(void)
 
 	INIT_LIST_HEAD(&mach->io_devs);
 
+	/*
+	 * VUART device at IO + 0x0.
+	 */
 	vuart = r5sim_vuart_load_new(mach, 0x0);
 	r5sim_assert(vuart != NULL);
-
 	r5sim_assert(r5sim_machine_add_device(mach, vuart) == 0);
 
+	/*
+	 * VSYS device at IO + 0x100.
+	 */
+	vsys = r5sim_vsys_load_new(mach, 0x100);
+	r5sim_assert(vsys != NULL);
+	r5sim_assert(r5sim_machine_add_device(mach, vsys) == 0);
+
+	/*
+	 * VDISK device at IO + 0x1000.
+	 */
 	if (args->disk_file) {
 		struct r5sim_iodev *vdisk =
 			r5sim_vdisk_load_new(mach, 0x1000, args->disk_file);

@@ -75,6 +75,7 @@ start(void)
 
 	printf("Welcome to a super simple R5 conf test\n");
 
+	ct_sys_info();
 	trap_setup();
 
 	while (*submodule != NULL) {

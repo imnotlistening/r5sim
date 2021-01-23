@@ -44,6 +44,11 @@ struct ct_time {
 /* Compiler barrier. */
 #define barrier()		asm volatile("": : :"memory")
 
+/*
+ * Print some basic sys info.
+ */
+void ct_sys_info(void);
+
 __attribute__((format (printf, 1, 2)))
 int printf(const char *fmt, ...);
 
