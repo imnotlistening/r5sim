@@ -78,8 +78,7 @@ static const struct ct_test op_tests[] = {
 	CT_TEST(NULL,				NULL,			NULL),
 };
 
-const struct ct_test *
-ct_op(void)
+const struct ct_test *ct_op(void)
 {
 	return op_tests;
 }

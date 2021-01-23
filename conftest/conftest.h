@@ -48,7 +48,6 @@ __attribute__((format (printf, 1, 2)))
 int printf(const char *fmt, ...);
 
 int  trap_setup(void);
-int  trap_test(void);
 void trap_entrance(u32 trap_pc, u32 cause);
 void __trap_vector(void);
 
@@ -70,6 +69,7 @@ const struct ct_test *ct_system(void);
 const struct ct_test *ct_load_store(void);
 const struct ct_test *ct_muldiv(void);
 const struct ct_test *ct_op(void);
+const struct ct_test *ct_traps(void);
 
 /*
  * This makes it easy to build lots of arithmetic ops quickly. This

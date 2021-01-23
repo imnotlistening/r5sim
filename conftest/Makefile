@@ -21,7 +21,8 @@ OBJS      += test_env.o \
 	     test_system.o \
 	     test_ldst.o \
 	     test_muldiv.o \
-	     test_op.o
+	     test_op.o \
+	     test_traps.o
 
 .PHONY: all clean install
 

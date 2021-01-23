@@ -11,6 +11,7 @@ static ct_test_list_fn submodules[] = {
 	ct_load_store,
 	ct_muldiv,
 	ct_op,
+	ct_traps,
 	NULL
 };
 
@@ -75,7 +76,6 @@ start(void)
 	printf("Welcome to a super simple R5 conf test\n");
 
 	trap_setup();
-	trap_test();
 
 	while (*submodule != NULL) {
 		ct_run_test_submodule(*submodule, &pass, &fail);

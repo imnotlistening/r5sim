@@ -5,8 +5,8 @@
 #include "csr.h"
 #include "conftest.h"
 
-static const char *
-code_to_str(u32 code)
+__attribute__((unused))
+static const char *code_to_str(u32 code)
 {
 	switch (code) {
 	case TRAP_ILLEGAL_INST:
@@ -18,8 +18,7 @@ code_to_str(u32 code)
 	}
 }
 
-int
-trap_setup(void)
+int trap_setup(void)
 {
 	u32 mtvec;
 	u32 tvec = (u32)&__trap_vector;
@@ -34,23 +33,9 @@ trap_setup(void)
 	return 0;
 }
 
-int
-trap_test(void)
+void trap_entrance(u32 trap_pc, u32 code)
 {
-	printf("Issuing illegal instruction.\n");
-	asm volatile(".long 0x00000000\n\t");
-	printf("We have returned!\n");
-
-	printf("Issuing ECALL.\n");
-	asm volatile("ecall\n\t");
-	printf("We have returned!\n");
-
-	return 1;
-}
-
-void
-trap_entrance(u32 trap_pc, u32 code)
-{
-	printf(" -- Received a trap: %u (%s)!\n", code, code_to_str(code));
-	printf(" -- Old PC: 0x%08x!\n", trap_pc);
+	/*
+	 * Do nothing!
+	 */
 }
