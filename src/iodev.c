@@ -5,8 +5,7 @@
 #include <r5sim/log.h>
 #include <r5sim/iodev.h>
 
-void
-r5sim_iodev_describe(struct r5sim_iodev *dev)
+void r5sim_iodev_describe(struct r5sim_iodev *dev)
 {
 	r5sim_info("IO Device: %s\n", dev->name);
 	r5sim_info("  Aperture info:\n");

@@ -48,8 +48,7 @@ static const char base16_lookup[] = {
 	'8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
 };
 
-static void
-__putc(char c)
+static void __putc(char c)
 {
 	/*
 	 * I do not know why, but I cannot get the PTY settings to be
@@ -62,8 +61,7 @@ __putc(char c)
 	writel(VUART_BASE + VUART_WRITE, c);
 }
 
-static void
-__puts(const char *str)
+static void __puts(const char *str)
 {
 	int i = 0;
 
@@ -71,20 +69,17 @@ __puts(const char *str)
 		__putc(str[i++]);
 }
 
-static int
-is_digit(char c)
+static int is_digit(char c)
 {
 	return c >= '0' && c <= '9';
 }
 
-static int
-is_space(char c)
+static int is_space(char c)
 {
 	return c == ' ' || c == '\t';
 }
 
-static void
-__memset(void *__dst, int __byte, u32 bytes)
+static void __memset(void *__dst, int __byte, u32 bytes)
 {
 	char byte = (char)__byte;
 	char *dst = (char *)__dst;
@@ -94,8 +89,7 @@ __memset(void *__dst, int __byte, u32 bytes)
 		dst[i] = byte;
 }
 
-static void
-__memcpy(void *__dst, const void *__src, u32 bytes)
+static void __memcpy(void *__dst, const void *__src, u32 bytes)
 {
 	int i;
 	char *dst = (char *)__dst;
@@ -105,8 +99,7 @@ __memcpy(void *__dst, const void *__src, u32 bytes)
 		dst[i] = src[i];
 }
 
-static u32
-__strlen(const char *str)
+static u32 __strlen(const char *str)
 {
 	int length = 0;
 
@@ -116,16 +109,14 @@ __strlen(const char *str)
 	return length;
 }
 
-static u32
-mul10(u32 value)
+static u32 mul10(u32 value)
 {
 	u32 doubled = value + value;
 
 	return doubled + (doubled << 3);
 }
 
-static u32
-atou(const char *buf, int *consumed)
+static u32 atou(const char *buf, int *consumed)
 {
 	u32 value = 0;
 
@@ -146,8 +137,7 @@ atou(const char *buf, int *consumed)
 	return value;
 }
 
-static void
-utostr_10(char *buf, u32 value)
+static void utostr_10(char *buf, u32 value)
 {
 	int digit = 9;
 	int i = 0;
@@ -180,8 +170,7 @@ utostr_10(char *buf, u32 value)
 	}
 }
 
-static void
-utostr_16(char *buf, u32 value)
+static void utostr_16(char *buf, u32 value)
 {
 	int nibble_offs = 28;
 	u32 nibble;
@@ -219,8 +208,7 @@ utostr_16(char *buf, u32 value)
  *
  * Note that we have to do this without a division.
  */
-static int
-utostr(char *buf, u32 value, int base)
+static int utostr(char *buf, u32 value, int base)
 {
 	if (base != 10 && base != 16) {
 		printf("Bad base: %d\n", base);
@@ -236,12 +224,11 @@ utostr(char *buf, u32 value, int base)
 	return 0;
 }
 
-static int
-printf_do_conversion(char *buf, u32 value,
-		     int base,
-		     u32 flags,
-		     u32 width,
-		     u32 length)
+static int printf_do_conversion(char *buf, u32 value,
+				int base,
+				u32 flags,
+				u32 width,
+				u32 length)
 {
 	char *buf_ptr = buf;
 	char raw_conv_buf[PRINTF_TEMP_BUF_SIZE];
@@ -306,11 +293,10 @@ printf_do_conversion(char *buf, u32 value,
 	return 0;
 }
 
-static int
-printf_parse_conversion(const char **fmt,
-			u32 *flags,
-			u32 *width,
-			u32 *length)
+static int printf_parse_conversion(const char **fmt,
+				   u32 *flags,
+				   u32 *width,
+				   u32 *length)
 {
 	int consumed = 0;
 
@@ -392,8 +378,7 @@ int printf_print_str(const char *str, u32 __width, u32 flags)
 	return width > len ? width : len;
 }
 
-int
-printf(const char *fmt, ...)
+int printf(const char *fmt, ...)
 {
 	va_list args;
 	int bytes = 0;

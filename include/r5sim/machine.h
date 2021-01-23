@@ -87,26 +87,22 @@ struct r5sim_machine {
  *
  * TODO: Dynamic machine loading.
  */
-struct r5sim_machine *
-r5sim_machine_load_default(void);
+struct r5sim_machine *r5sim_machine_load_default(void);
 
 /*
  * Load a bootrom image into the brom space in the machine. If this
  * fails it triggers an assert.
  */
-void
-r5sim_machine_load_brom(struct r5sim_machine *mach);
+void r5sim_machine_load_brom(struct r5sim_machine *mach);
 
 /*
  * Begin machine boot.
  */
-void
-r5sim_machine_boot(struct r5sim_machine *mach);
+void r5sim_machine_boot(struct r5sim_machine *mach);
 
 /*
  * Display the details for a machine.
  */
-void
-r5sim_machine_print(struct r5sim_machine *mach);
+void r5sim_machine_print(struct r5sim_machine *mach);
 
 #endif

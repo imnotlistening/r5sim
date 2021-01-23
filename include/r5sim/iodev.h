@@ -42,7 +42,6 @@ struct r5sim_iodev {
 	void                 *priv;
 };
 
-void
-r5sim_iodev_describe(struct r5sim_iodev *dev);
+void r5sim_iodev_describe(struct r5sim_iodev *dev);
 
 #endif

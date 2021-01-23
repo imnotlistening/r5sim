@@ -42,8 +42,8 @@ struct r5sim_core {
 			struct r5sim_core *core);
 };
 
-static inline void
-__set_reg(struct r5sim_core *core, u32 reg, u32 val)
+static inline void __set_reg(
+	struct r5sim_core *core, u32 reg, u32 val)
 {
 	r5sim_assert(reg < 32);
 
@@ -54,21 +54,19 @@ __set_reg(struct r5sim_core *core, u32 reg, u32 val)
 	core->reg_file[reg] = val;
 }
 
-static inline u32
-__get_reg(struct r5sim_core *core, u32 reg)
+static inline u32 __get_reg(
+	struct r5sim_core *core, u32 reg)
 {
 	r5sim_assert(reg < 32);
 
 	return core->reg_file[reg];
 }
 
-void
-r5sim_core_init_common(struct r5sim_core *core);
-
-void
-r5sim_core_exec(struct r5sim_machine *mach,
-		struct r5sim_core *core,
-		u32 pc);
+void r5sim_core_init_common(struct r5sim_core *core);
+void r5sim_core_exec(struct r5sim_machine *mach,
+		     struct r5sim_core *core,
+		     u32 pc);
+void r5sim_core_describe(struct r5sim_core *core);
 
 /*
  * Ask the core to execute a trap.
@@ -77,31 +75,18 @@ r5sim_core_exec(struct r5sim_machine *mach,
  * to the trap handler. When this returns the main execution loop
  * will continue executing, but with a potentially new PC.
  */
-int
-r5sim_core_trap(struct r5sim_machine *mach,
-		struct r5sim_core *core,
-		u32 code);
+int r5sim_core_trap(struct r5sim_machine *mach,
+		    struct r5sim_core *core,
+		    u32 code);
 
-const char *
-r5sim_reg_to_abi_str(u32 reg);
-const char *
-r5sim_reg_to_str(u32 reg);
-const char *
-r5sim_load_func3_to_str(u32 func3);
-const char *
-r5sim_store_func3_to_str(u32 func3);
-const char *
-r5sim_op_imm_func3_to_str(u32 func3);
-const char *
-r5sim_op_i_func3_to_str(u32 func3, u32 func7);
-const char *
-r5sim_op_m_func3_to_str(u32 func3);
-const char *
-r5sim_branch_func3_to_str(u32 func3);
-const char *
-r5sim_system_func3_to_str(u32 func3, u32 csr);
-
-void
-r5sim_core_describe(struct r5sim_core *core);
+const char *r5sim_reg_to_abi_str(u32 reg);
+const char *r5sim_reg_to_str(u32 reg);
+const char *r5sim_load_func3_to_str(u32 func3);
+const char *r5sim_store_func3_to_str(u32 func3);
+const char *r5sim_op_imm_func3_to_str(u32 func3);
+const char *r5sim_op_i_func3_to_str(u32 func3, u32 func7);
+const char *r5sim_op_m_func3_to_str(u32 func3);
+const char *r5sim_branch_func3_to_str(u32 func3);
+const char *r5sim_system_func3_to_str(u32 func3, u32 csr);
 
 #endif

@@ -18,10 +18,9 @@
 #include <r5sim/machine.h>
 #include <r5sim/simple_core.h>
 
-static int
-exec_misc_mem(struct r5sim_machine *mach,
-	      struct r5sim_core *core,
-	      const r5_inst *__inst)
+static int exec_misc_mem(struct r5sim_machine *mach,
+			 struct r5sim_core *core,
+			 const r5_inst *__inst)
 {
 	r5sim_itrace("NO-OP\n");
 
@@ -31,10 +30,9 @@ exec_misc_mem(struct r5sim_machine *mach,
 	return 0;
 }
 
-static int
-exec_load(struct r5sim_machine *mach,
-	  struct r5sim_core *core,
-	  const r5_inst *__inst)
+static int exec_load(struct r5sim_machine *mach,
+		     struct r5sim_core *core,
+		     const r5_inst *__inst)
 {
 	const r5_inst_i *inst = (const r5_inst_i *)__inst;
 	u32 paddr_src;
@@ -89,10 +87,9 @@ exec_load(struct r5sim_machine *mach,
 	return 0;
 }
 
-static int
-exec_store(struct r5sim_machine *mach,
-	    struct r5sim_core *core,
-	    const r5_inst *__inst)
+static int exec_store(struct r5sim_machine *mach,
+		      struct r5sim_core *core,
+		      const r5_inst *__inst)
 {
 	const r5_inst_s *inst = (const r5_inst_s *)__inst;
 	u32 imm;
@@ -131,10 +128,9 @@ exec_store(struct r5sim_machine *mach,
 	return 0;
 }
 
-static int
-exec_op_imm(struct r5sim_machine *mach,
-	    struct r5sim_core *core,
-	    const r5_inst *__inst)
+static int exec_op_imm(struct r5sim_machine *mach,
+		       struct r5sim_core *core,
+		       const r5_inst *__inst)
 {
 	const r5_inst_i *inst = (const r5_inst_i *)__inst;
 	u32 imm = sign_extend(inst->imm_11_0, 11);
@@ -193,10 +189,9 @@ exec_op_imm(struct r5sim_machine *mach,
 	return 0;
 }
 
-static int
-exec_op_i(struct r5sim_machine *mach,
-	  struct r5sim_core *core,
-	  const r5_inst_r *inst)
+static int exec_op_i(struct r5sim_machine *mach,
+		     struct r5sim_core *core,
+		     const r5_inst_r *inst)
 {
 	switch (inst->func3) {
 	case 0x0: /* ADD, SUB */
@@ -267,10 +262,9 @@ exec_op_i(struct r5sim_machine *mach,
 	return 0;
 }
 
-static int
-exec_op_m(struct r5sim_machine *mach,
-	  struct r5sim_core *core,
-	  const r5_inst_r *inst)
+static int exec_op_m(struct r5sim_machine *mach,
+		     struct r5sim_core *core,
+		     const r5_inst_r *inst)
 {
 	uint64_t uproduct;
 	int64_t  sproduct;
@@ -330,10 +324,9 @@ exec_op_m(struct r5sim_machine *mach,
 	return 0;
 }
 
-static int
-exec_op(struct r5sim_machine *mach,
-	struct r5sim_core *core,
-	const r5_inst *__inst)
+static int exec_op(struct r5sim_machine *mach,
+		   struct r5sim_core *core,
+		   const r5_inst *__inst)
 {
 	const r5_inst_r *inst = (const r5_inst_r *)__inst;
 
@@ -343,10 +336,9 @@ exec_op(struct r5sim_machine *mach,
 		return exec_op_i(mach, core, inst);
 }
 
-static int
-exec_jal(struct r5sim_machine *mach,
-	 struct r5sim_core *core,
-	 const r5_inst *__inst)
+static int exec_jal(struct r5sim_machine *mach,
+		    struct r5sim_core *core,
+		    const r5_inst *__inst)
 {
 	const r5_inst_j *inst = (const r5_inst_j *)__inst;
 	u32 lr = core->pc + 4;
@@ -367,10 +359,9 @@ exec_jal(struct r5sim_machine *mach,
 	return 0;
 }
 
-static int
-exec_jalr(struct r5sim_machine *mach,
-	  struct r5sim_core *core,
-	  const r5_inst *__inst)
+static int exec_jalr(struct r5sim_machine *mach,
+		     struct r5sim_core *core,
+		     const r5_inst *__inst)
 {
 	const r5_inst_i *inst = (const r5_inst_i *)__inst;
 	u32 lr = core->pc + 4;
@@ -390,10 +381,9 @@ exec_jalr(struct r5sim_machine *mach,
 	return 0;
 }
 
-static int
-exec_branch(struct r5sim_machine *mach,
-	    struct r5sim_core *core,
-	    const r5_inst *__inst)
+static int exec_branch(struct r5sim_machine *mach,
+		       struct r5sim_core *core,
+		       const r5_inst *__inst)
 {
 	const r5_inst_b *inst = (const r5_inst_b *)__inst;
 	u32 rs1, rs2;
@@ -454,10 +444,9 @@ exec_branch(struct r5sim_machine *mach,
 	return 0;
 }
 
-static int
-exec_auipc(struct r5sim_machine *mach,
-	   struct r5sim_core *core,
-	   const r5_inst *__inst)
+static int exec_auipc(struct r5sim_machine *mach,
+		      struct r5sim_core *core,
+		      const r5_inst *__inst)
 {
 	const r5_inst_u *inst = (const r5_inst_u *)__inst;
 	u32 *inst_u32 = (u32 *)__inst;
@@ -473,10 +462,9 @@ exec_auipc(struct r5sim_machine *mach,
 	return 0;
 }
 
-static int
-exec_lui(struct r5sim_machine *mach,
-	 struct r5sim_core *core,
-	 const r5_inst *__inst)
+static int exec_lui(struct r5sim_machine *mach,
+		    struct r5sim_core *core,
+		    const r5_inst *__inst)
 {
 	const r5_inst_u *inst = (const r5_inst_u *)__inst;
 	u32 *inst_u32 = (u32 *)__inst;
@@ -490,10 +478,9 @@ exec_lui(struct r5sim_machine *mach,
 	return 0;
 }
 
-static int
-exec_system(struct r5sim_machine *mach,
-	    struct r5sim_core *core,
-	    const r5_inst *__inst)
+static int exec_system(struct r5sim_machine *mach,
+		       struct r5sim_core *core,
+		       const r5_inst *__inst)
 {
 	const r5_inst_i *inst = (const r5_inst_i *)__inst;
 	const u32 csr = inst->imm_11_0;
@@ -601,8 +588,7 @@ static struct r5_op_family op_families[32] = {
 	[31] = { 0 }, /* --- */
 };
 
-static struct r5_op_family *
-simple_core_opcode_fam(r5_inst *inst)
+static struct r5_op_family *simple_core_opcode_fam(r5_inst *inst)
 {
 	u32 type_bits = (inst->opcode & 0x7c) >> 2;
 
@@ -659,8 +645,8 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 	return 0;
 }
 
-struct r5sim_core *
-r5sim_simple_core_instance(struct r5sim_machine *mach)
+struct r5sim_core *r5sim_simple_core_instance(
+	struct r5sim_machine *mach)
 {
 	struct r5sim_core *core;
 

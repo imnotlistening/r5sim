@@ -21,8 +21,7 @@ struct virt_uart_priv {
 	int  slave_fd;
 };
 
-static u32
-virt_uart_readl(struct r5sim_iodev *iodev, u32 offs)
+static u32 virt_uart_readl(struct r5sim_iodev *iodev, u32 offs)
 {
 	struct virt_uart_priv *priv = iodev->priv;
 	char c = 0;
@@ -42,8 +41,7 @@ virt_uart_readl(struct r5sim_iodev *iodev, u32 offs)
 	return (u32)c;
 }
 
-static void
-virt_uart_writel(struct r5sim_iodev *iodev,
+static void virt_uart_writel(struct r5sim_iodev *iodev,
 		 u32 offs, u32 val)
 {
 	struct virt_uart_priv *priv = iodev->priv;
@@ -73,9 +71,8 @@ static struct r5sim_iodev virtual_uart = {
 	.writel    = virt_uart_writel,
 };
 
-struct r5sim_iodev *
-r5sim_vuart_load_new(struct r5sim_machine *mach,
-		     u32 io_offs)
+struct r5sim_iodev *r5sim_vuart_load_new(struct r5sim_machine *mach,
+					 u32 io_offs)
 {
 	struct r5sim_iodev *dev;
 	struct virt_uart_priv *priv;

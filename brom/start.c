@@ -36,20 +36,18 @@ typedef void (*blcall)(void);
 		}							\
 	} while (0)
 
-__attribute__((unused)) static char
-brom_getc(void)
+__attribute__((unused))
+static char brom_getc(void)
 {
 	return (char) readl(VUART_BASE + VUART_READ);
 }
 
-static void
-brom_putc(char c)
+static void brom_putc(char c)
 {
 	writel(VUART_BASE + VUART_WRITE, c);
 }
 
-static void
-brom_puts(char *str)
+static void brom_puts(char *str)
 {
 	int i = 0;
 
@@ -62,8 +60,7 @@ brom_puts(char *str)
 /*
  * Load a page from the vdisk and place it at dest.
  */
-static void
-load_disk_page(u32 dest, u32 offset)
+static void load_disk_page(u32 dest, u32 offset)
 {
 	/*
 	 * Configure op.
@@ -88,8 +85,7 @@ load_disk_page(u32 dest, u32 offset)
 /*
  * Load a bootloader in the first 16KB of the vdisk.
  */
-static void
-load_bootloader(void)
+static void load_bootloader(void)
 {
 	u32 vdisk_pgsz = readl(VDISK_BASE + VDISK_PAGE_SIZE);
 	u32 dram_base = 0x20000000;
@@ -111,8 +107,7 @@ load_bootloader(void)
 	start();
 }
 
-void
-start(void)
+void start(void)
 {
 	int vdisk_present;
 

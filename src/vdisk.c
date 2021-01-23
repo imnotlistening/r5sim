@@ -33,8 +33,7 @@ struct virt_disk_priv {
 	u32 dev_state[VDISK_MAX_REG >> 2];
 };
 
-static const char *
-vdisk_reg_to_str(u32 reg)
+static const char *vdisk_reg_to_str(u32 reg)
 {
 	static const char *str_reg[] = {
 		[VDISK_PRESENT]		= "VDISK_PRESENT",
@@ -57,8 +56,7 @@ vdisk_reg_to_str(u32 reg)
 /*
  * Set a state register for the device.
  */
-static void
-__vdisk_set_state(struct virt_disk_priv *disk, u32 __i, u32 val)
+static void __vdisk_set_state(struct virt_disk_priv *disk, u32 __i, u32 val)
 {
 	u32 i = __i >> 2;
 
@@ -67,8 +65,7 @@ __vdisk_set_state(struct virt_disk_priv *disk, u32 __i, u32 val)
 	disk->dev_state[i] = val;
 }
 
-static u32
-__vdisk_read_state(struct virt_disk_priv *disk, u32 __i)
+static u32 __vdisk_read_state(struct virt_disk_priv *disk, u32 __i)
 {
 	u32 i = __i >> 2;
 
@@ -77,8 +74,7 @@ __vdisk_read_state(struct virt_disk_priv *disk, u32 __i)
 	return disk->dev_state[i];
 }
 
-static u32
-virt_disk_readl(struct r5sim_iodev *iodev, u32 offs)
+static u32 virt_disk_readl(struct r5sim_iodev *iodev, u32 offs)
 
 {
 	vdisk_dbg("LOAD  @ %s\n",
@@ -90,8 +86,7 @@ virt_disk_readl(struct r5sim_iodev *iodev, u32 offs)
 	return __vdisk_read_state(iodev->priv, offs);
 }
 
-static void
-virt_disk_exec_op(struct r5sim_iodev *iodev)
+static void virt_disk_exec_op(struct r5sim_iodev *iodev)
 {
 	struct virt_disk_priv *priv = iodev->priv;
 	struct r5sim_machine *mach = iodev->mach;
@@ -122,9 +117,8 @@ virt_disk_exec_op(struct r5sim_iodev *iodev)
 		       pages * KB(4));
 }
 
-static void
-virt_disk_writel(struct r5sim_iodev *iodev,
-		 u32 offs, u32 val)
+static void virt_disk_writel(struct r5sim_iodev *iodev,
+			     u32 offs, u32 val)
 {
 	vdisk_dbg("STORE @ %-17s v=0x%08x\n",
 		  vdisk_reg_to_str(offs), val);
@@ -155,10 +149,9 @@ virt_disk_writel(struct r5sim_iodev *iodev,
 	}
 }
 
-static int
-vdisk_load(struct r5sim_machine *mach,
-	   struct virt_disk_priv *disk,
-	   const char *path)
+static int vdisk_load(struct r5sim_machine *mach,
+		      struct virt_disk_priv *disk,
+		      const char *path)
 {
 	struct stat buf;
 
@@ -211,9 +204,9 @@ static struct r5sim_iodev virtual_disk = {
 	.writel    = virt_disk_writel,
 };
 
-struct r5sim_iodev *
-r5sim_vdisk_load_new(struct r5sim_machine *mach,
-		     u32 io_offs, const char *path)
+struct r5sim_iodev *r5sim_vdisk_load_new(
+	struct r5sim_machine *mach,
+	u32 io_offs, const char *path)
 {
 	struct r5sim_iodev *dev;
 	struct virt_disk_priv *priv;

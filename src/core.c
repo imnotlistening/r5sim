@@ -14,8 +14,7 @@
 #include <r5sim/trap.h>
 #include <r5sim/util.h>
 
-static void
-r5sim_core_halt(struct r5sim_core *core)
+static void r5sim_core_halt(struct r5sim_core *core)
 {
 	r5sim_info("Core HALT'ing!\n");
 	r5sim_core_describe(core);
@@ -26,8 +25,7 @@ r5sim_core_halt(struct r5sim_core *core)
  * be changed in the future, but for now it seems like a viable enough
  * approach.
  */
-static void
-r5sim_core_incr(struct r5sim_core *core)
+static void r5sim_core_incr(struct r5sim_core *core)
 {
 	core->csr_file[CSR_CYCLE].value += 1;
 	core->csr_file[CSR_INSTRET].value += 1;
@@ -44,10 +42,9 @@ r5sim_core_incr(struct r5sim_core *core)
  *
  * When core->exec_one() returns non-zero, HALT the machine.
  */
-void
-r5sim_core_exec(struct r5sim_machine *mach,
-		struct r5sim_core *core,
-		u32 pc)
+void r5sim_core_exec(struct r5sim_machine *mach,
+		     struct r5sim_core *core,
+		     u32 pc)
 {
 	core->pc = pc;
 
@@ -83,10 +80,10 @@ r5sim_core_exec(struct r5sim_machine *mach,
 	return;
 }
 
-static int
-r5sim_core_exec_trap(struct r5sim_machine *mach,
-		     struct r5sim_core *core,
-		     u32 pc)
+static int r5sim_core_exec_trap(
+	struct r5sim_machine *mach,
+	struct r5sim_core *core,
+	u32 pc)
 {
 	u32 ret;
 
@@ -137,10 +134,9 @@ r5sim_core_exec_trap(struct r5sim_machine *mach,
  *
  * Once this function returns the regular execution stream resumes.
  */
-int
-r5sim_core_trap(struct r5sim_machine *mach,
-		struct r5sim_core *core,
-		u32 code)
+int r5sim_core_trap(struct r5sim_machine *mach,
+		    struct r5sim_core *core,
+		    u32 code)
 {
 	u32 mtvec, base, mode;
 	u32 mcause = 0;
@@ -178,8 +174,7 @@ r5sim_core_trap(struct r5sim_machine *mach,
 	return 0;
 }
 
-void
-r5sim_core_describe(struct r5sim_core *core)
+void r5sim_core_describe(struct r5sim_core *core)
 {
 	int i;
 
@@ -209,20 +204,17 @@ static const char *reg_names[32] = {
 	/* 24 */ "x24", "x25", "x26", "x27", "x28", "x29", "x30", "x31",
 };
 
-const char *
-r5sim_reg_to_abi_str(u32 reg)
+const char *r5sim_reg_to_abi_str(u32 reg)
 {
 	return reg_abi_names[reg];
 }
 
-const char *
-r5sim_reg_to_str(u32 reg)
+const char *r5sim_reg_to_str(u32 reg)
 {
 	return reg_names[reg];
 }
 
-const char *
-r5sim_load_func3_to_str(u32 func3)
+const char *r5sim_load_func3_to_str(u32 func3)
 {
 	switch (func3) {
 	case 0x0: /* LB */
@@ -240,8 +232,7 @@ r5sim_load_func3_to_str(u32 func3)
 	return "ERR";
 };
 
-const char *
-r5sim_store_func3_to_str(u32 func3)
+const char *r5sim_store_func3_to_str(u32 func3)
 {
 	switch (func3) {
 	case 0x0: /* SB */
@@ -255,8 +246,7 @@ r5sim_store_func3_to_str(u32 func3)
 	return "ERR";
 }
 
-const char *
-r5sim_op_imm_func3_to_str(u32 func3)
+const char *r5sim_op_imm_func3_to_str(u32 func3)
 {
 	switch (func3) {
 	case 0x0: /* ADDI */
@@ -280,8 +270,7 @@ r5sim_op_imm_func3_to_str(u32 func3)
 	return "ERR";
 }
 
-const char *
-r5sim_op_i_func3_to_str(u32 func3, u32 func7)
+const char *r5sim_op_i_func3_to_str(u32 func3, u32 func7)
 {
 	switch (func3) {
 	case 0x0: /* ADD, SUB */
@@ -305,8 +294,7 @@ r5sim_op_i_func3_to_str(u32 func3, u32 func7)
 	return "ERR";
 }
 
-const char *
-r5sim_op_m_func3_to_str(u32 func3)
+const char *r5sim_op_m_func3_to_str(u32 func3)
 {
 	switch (func3) {
 	case 0x0: /* MUL */
@@ -330,8 +318,7 @@ r5sim_op_m_func3_to_str(u32 func3)
 	return ERR;
 }
 
-const char *
-r5sim_branch_func3_to_str(u32 func3)
+const char *r5sim_branch_func3_to_str(u32 func3)
 {
 	switch (func3) {
 	case 0x0: /* BEQ */
@@ -351,8 +338,7 @@ r5sim_branch_func3_to_str(u32 func3)
 	return "ERR";
 }
 
-const char *
-r5sim_system_func3_to_str(u32 func3, u32 csr)
+const char *r5sim_system_func3_to_str(u32 func3, u32 csr)
 {
 	switch (func3) {
 	case 0x0: /* ECALL, MRET. */

@@ -10,8 +10,8 @@
 struct r5sim_iodev;
 struct r5sim_machine;
 
-struct r5sim_iodev *
-r5sim_vuart_load_new(struct r5sim_machine *mach,
-		     u32 io_offs);
+struct r5sim_iodev *r5sim_vuart_load_new(
+	struct r5sim_machine *mach,
+	u32 io_offs);
 
 #endif

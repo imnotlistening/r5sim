@@ -9,15 +9,13 @@
 #include <r5sim/env.h>
 #include <r5sim/core.h>
 
-static void
-csr_mstatus_read(struct r5sim_core *core,
+static void csr_mstatus_read(struct r5sim_core *core,
 		 struct r5sim_csr *csr)
 {
 
 }
 
-static void
-csr_mstatus_write(struct r5sim_core *core,
+static void csr_mstatus_write(struct r5sim_core *core,
 		  struct r5sim_csr *csr)
 {
 
@@ -31,9 +29,8 @@ csr_mstatus_write(struct r5sim_core *core,
  * The subsequent reads will then pull out this computed value from the
  * CSR file.
  */
-static void
-r5sim_csr_time(struct r5sim_core *core,
-	       struct r5sim_csr *csr)
+static void r5sim_csr_time(struct r5sim_core *core,
+			   struct r5sim_csr *csr)
 {
 	long nsecs;
 	time_t secs;
@@ -56,18 +53,16 @@ r5sim_csr_time(struct r5sim_core *core,
 	__raw_csr_write(&core->csr_file[CSR_TIMEH], (u32)(delta_ns >> 32));
 }
 
-void
-__r5sim_core_add_csr(struct r5sim_core *core,
-		     struct r5sim_csr *csr_reg,
-		     u32 csr)
+void __r5sim_core_add_csr(struct r5sim_core *core,
+			  struct r5sim_csr *csr_reg,
+			  u32 csr)
 {
 	r5sim_assert(csr < 4096);
 
 	core->csr_file[csr] = *csr_reg;
 }
 
-static void
-r5sim_core_default_csrs(struct r5sim_core *core)
+static void r5sim_core_default_csrs(struct r5sim_core *core)
 {
 	r5sim_core_add_csr(core, CSR_CYCLE,	0x0, CSR_F_READ);
 	r5sim_core_add_csr(core, CSR_INSTRET,	0x0, CSR_F_READ);
@@ -101,8 +96,7 @@ r5sim_core_default_csrs(struct r5sim_core *core)
 
 }
 
-void
-r5sim_core_init_common(struct r5sim_core *core)
+void r5sim_core_init_common(struct r5sim_core *core)
 {
 	r5sim_core_default_csrs(core);
 
@@ -116,8 +110,8 @@ r5sim_core_init_common(struct r5sim_core *core)
  * This will return NULL if the CSR is not implemented. Otherwise it
  * returns the address of ther CSR struct in the CSR file.
  */
-static struct r5sim_csr *
-__csr_always(struct r5sim_core *core, u32 rd, u32 csr)
+static struct r5sim_csr *__csr_always(struct r5sim_core *core,
+				      u32 rd, u32 csr)
 {
 	struct r5sim_csr *csr_reg;
 
@@ -137,8 +131,7 @@ __csr_always(struct r5sim_core *core, u32 rd, u32 csr)
 	return csr_reg;
 }
 
-void
-__csr_w(struct r5sim_core *core, u32 rd, u32 value, u32 csr)
+void __csr_w(struct r5sim_core *core, u32 rd, u32 value, u32 csr)
 {
 	struct r5sim_csr *csr_reg;
 
@@ -153,8 +146,7 @@ __csr_w(struct r5sim_core *core, u32 rd, u32 value, u32 csr)
 	}
 }
 
-void
-__csr_s(struct r5sim_core *core, u32 rd, u32 value, u32 csr)
+void __csr_s(struct r5sim_core *core, u32 rd, u32 value, u32 csr)
 {
 	struct r5sim_csr *csr_reg;
 
@@ -169,8 +161,7 @@ __csr_s(struct r5sim_core *core, u32 rd, u32 value, u32 csr)
 	}
 }
 
-void
-__csr_c(struct r5sim_core *core, u32 rd, u32 value, u32 csr)
+void __csr_c(struct r5sim_core *core, u32 rd, u32 value, u32 csr)
 {
 	struct r5sim_csr *csr_reg;
 
@@ -185,16 +176,14 @@ __csr_c(struct r5sim_core *core, u32 rd, u32 value, u32 csr)
 	}
 }
 
-u32
-csr_read(struct r5sim_core *core, u32 csr)
+u32 csr_read(struct r5sim_core *core, u32 csr)
 {
 	r5sim_assert(csr < 4096);
 
 	return __raw_csr_read(&core->csr_file[csr]);
 }
 
-void
-csr_write(struct r5sim_core *core, u32 csr, u32 value)
+void csr_write(struct r5sim_core *core, u32 csr, u32 value)
 {
 	r5sim_assert(csr < 4096);
 

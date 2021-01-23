@@ -45,46 +45,31 @@ struct ct_time {
 #define barrier()		asm volatile("": : :"memory")
 
 __attribute__((format (printf, 1, 2)))
-int
-printf(const char *fmt, ...);
+int printf(const char *fmt, ...);
 
-int
-trap_setup(void);
-int
-trap_test(void);
-void
-trap_entrance(u32 trap_pc, u32 cause);
-void
-__trap_vector(void);
+int  trap_setup(void);
+int  trap_test(void);
+void trap_entrance(u32 trap_pc, u32 cause);
+void __trap_vector(void);
 
-void
-ct_time_diff(struct ct_time *dst, struct ct_time *a, struct ct_time *b);
-void
-ct_ptime(struct ct_time *t, const char *str);
+void ct_time_diff(struct ct_time *dst, struct ct_time *a, struct ct_time *b);
+void ct_ptime(struct ct_time *t, const char *str);
 
 /*
  * Defined in conftest.S
  */
-u32
-ct_rdcycle(void);
-u32
-ct_rdinstret(void);
-void
-ct_rdtime(struct ct_time *time);
+u32  ct_rdcycle(void);
+u32  ct_rdinstret(void);
+void ct_rdtime(struct ct_time *time);
 
 /*
  * Tests.
  */
-const struct ct_test *
-ct_env(void);
-const struct ct_test *
-ct_system(void);
-const struct ct_test *
-ct_load_store(void);
-const struct ct_test *
-ct_muldiv(void);
-const struct ct_test *
-ct_op(void);
+const struct ct_test *ct_env(void);
+const struct ct_test *ct_system(void);
+const struct ct_test *ct_load_store(void);
+const struct ct_test *ct_muldiv(void);
+const struct ct_test *ct_op(void);
 
 /*
  * This makes it easy to build lots of arithmetic ops quickly. This
@@ -104,8 +89,7 @@ struct ct_op {
 	}
 
 #define test_func(op)					\
-	static int					\
-	ct_test_##op(void *data)			\
+	static int ct_test_##op(void *data)		\
 	{						\
 		struct ct_op *test = data;		\
 		u32 res;				\

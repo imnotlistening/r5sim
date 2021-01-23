@@ -69,7 +69,7 @@ struct r5sim_csr {
 	do {								\
 		struct r5sim_csr csr = {				\
 			.value = __value,				\
-			.flags = __flags | CSR_F_PRESENT,			\
+			.flags = __flags | CSR_F_PRESENT,		\
 		};							\
 		__r5sim_core_add_csr(core, &csr, __csr);		\
 	} while (0)
@@ -78,52 +78,44 @@ struct r5sim_csr {
 	do {								\
 		struct r5sim_csr csr = {				\
 			.value = __value,				\
-			.flags = __flags | CSR_F_PRESENT,			\
+			.flags = __flags | CSR_F_PRESENT,		\
 			.read_fn = rd,					\
 			.write_fn = wr,					\
 		};							\
 		__r5sim_core_add_csr(core, &csr, __csr);		\
 	} while (0)
 
-u32
-csr_read(struct r5sim_core *core, u32 csr);
-void
-csr_write(struct r5sim_core *core, u32 csr, u32 value);
+u32  csr_read(struct r5sim_core *core, u32 csr);
+void csr_write(struct r5sim_core *core, u32 csr, u32 value);
 
-static inline u32
-__raw_csr_read(struct r5sim_csr *csr)
+static inline u32 __raw_csr_read(struct r5sim_csr *csr)
 {
 	return csr->value;
 }
 
-static inline void
-__raw_csr_write(struct r5sim_csr *csr, u32 value)
+static inline void __raw_csr_write(struct r5sim_csr *csr, u32 value)
 {
 	csr->value = value;
 }
 
-static inline void
-__raw_csr_set_mask(struct r5sim_csr *csr, u32 value)
+static inline void __raw_csr_set_mask(struct r5sim_csr *csr,
+				      u32 value)
 {
 	csr->value |= value;
 }
 
-static inline void
-__raw_csr_clear_mask(struct r5sim_csr *csr, u32 value)
+static inline void __raw_csr_clear_mask(struct r5sim_csr *csr,
+					u32 value)
 {
 	csr->value &= ~value;
 }
 
-void
-__csr_w(struct r5sim_core *core, u32 rd, u32 value, u32 csr);
-void
-__csr_s(struct r5sim_core *core, u32 rd, u32 value, u32 csr);
-void
-__csr_c(struct r5sim_core *core, u32 rd, u32 value, u32 csr);
+void __csr_w(struct r5sim_core *core, u32 rd, u32 value, u32 csr);
+void __csr_s(struct r5sim_core *core, u32 rd, u32 value, u32 csr);
+void __csr_c(struct r5sim_core *core, u32 rd, u32 value, u32 csr);
 
-void
-__r5sim_core_add_csr(struct r5sim_core *core,
-		     struct r5sim_csr *csr_reg,
-		     u32 csr);
+void __r5sim_core_add_csr(struct r5sim_core *core,
+			  struct r5sim_csr *csr_reg,
+			  u32 csr);
 
 #endif

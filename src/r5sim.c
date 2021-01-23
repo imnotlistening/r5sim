@@ -50,14 +50,12 @@ static void r5sim_help(void) {
 
 }
 
-static void
-r5sim_set_default_opts(void)
+static void r5sim_set_default_opts(void)
 {
 	app_args.verbose = INFO;
 }
 
-static int
-r5sim_getopts(int argc, char * const argv[])
+static int r5sim_getopts(int argc, char * const argv[])
 {
 	int c, opt_index;
 
@@ -101,8 +99,7 @@ r5sim_getopts(int argc, char * const argv[])
 	return 0;
 }
 
-struct r5sim_app_args *
-r5sim_app_get_args(void)
+struct r5sim_app_args *r5sim_app_get_args(void)
 {
 	return &app_args;
 }
