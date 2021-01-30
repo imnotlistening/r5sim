@@ -148,6 +148,7 @@ static void utostr_10(char *buf, u32 value)
 	if (value == 0) {
 		buf[0] = '0';
 		buf[1] = '\0';
+		return;
 	}
 
 	while (base10[digit] > value)
@@ -211,7 +212,6 @@ static void utostr_16(char *buf, u32 value)
 static int utostr(char *buf, u32 value, int base)
 {
 	if (base != 10 && base != 16) {
-		printf("Bad base: %d\n", base);
 		return -1;
 	}
 
@@ -249,7 +249,6 @@ static int printf_do_conversion(char *buf, u32 value,
 		/* Nothing to do here. */
 		break;
 	default:
-		printf("> bad length: %d\n", length);
 		return -1;
 	}
 
@@ -258,7 +257,6 @@ static int printf_do_conversion(char *buf, u32 value,
 	 * and then copy it into buf based on flags and width.
 	 */
 	if (utostr(raw_conv_buf, value, base)) {
-		printf("Conv failed!\n");
 		return -1;
 	}
 
@@ -413,16 +411,12 @@ int printf(const char *fmt, ...)
 					    &width, &length))
 			return bytes;
 
-		// printf("> F=0x%x; W=%u; L=0x%x\n", flags, width, length);
-
 		/*
 		 * Get the actual conversion to print.
 		 */
-		// printf("> Conv flag: %c\n", *fmt);
 		switch (*fmt++) {
 		case 'u':
 			value = va_arg(args, u32);
-			// printf("> Value: %u\n", value);
 			if (printf_do_conversion(buf, value, 10,
 						 flags, width, length))
 				return bytes;
