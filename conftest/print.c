@@ -30,19 +30,6 @@
 #define MAX(a, b)				\
 	(a > b ? a : b)
 
-static const u32 base10[] = {
-	1,
-	10,
-	100,
-	1000,
-	10000,
-	100000,
-	1000000,
-	10000000,
-	100000000,
-	1000000000
-};
-
 static const char base16_lookup[] = {
 	'0', '1', '2', '3', '4', '5', '6', '7',
 	'8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
@@ -109,13 +96,6 @@ static u32 __strlen(const char *str)
 	return length;
 }
 
-static u32 mul10(u32 value)
-{
-	u32 doubled = value + value;
-
-	return doubled + (doubled << 3);
-}
-
 static u32 atou(const char *buf, int *consumed)
 {
 	u32 value = 0;
@@ -129,7 +109,7 @@ static u32 atou(const char *buf, int *consumed)
 	}
 
 	while (is_digit(*buf)) {
-		value = mul10(value) + (*buf - '0');
+		value = (value * 10) + (*buf - '0');
 		(*consumed)++;
 		buf++;
 	}
@@ -139,36 +119,21 @@ static u32 atou(const char *buf, int *consumed)
 
 static void utostr_10(char *buf, u32 value)
 {
-	int digit = 9;
-	int i = 0;
+	int j = 0, i = 0;
+	char reverse_buf[12] = { '0' };
 
-	__memset(buf, 0, PRINTF_TEMP_BUF_SIZE);
-
-	/* Special case for 0. */
-	if (value == 0) {
-		buf[0] = '0';
-		buf[1] = '\0';
-		return;
-	}
-
-	while (base10[digit] > value)
-		digit--;
-
-	while (digit >= 0) {
-		buf[i] = '0';
-		while (value >= base10[digit]) {
-			buf[i]++;
-			value -= base10[digit];
-		}
-
-		/* Special case: the very last digit. */
-		if (base10[digit] == 1 && value == 1) {
-			buf[i]++;
-		}
-
+	if (value == 0)
 		i++;
-		digit--;
+
+	while (value > 0) {
+		reverse_buf[i++] = '0' + (value % 10);
+		value /= 10;
 	}
+
+	while (i-- > 0)
+		buf[j++] = reverse_buf[i];
+
+	buf[j] = '\0';
 }
 
 static void utostr_16(char *buf, u32 value)
