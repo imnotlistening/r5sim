@@ -23,8 +23,8 @@ typedef void (*blcall)(void);
 /*
  * No need for barriers on the simple_core.
  */
-#define readl(addr)		*((u32 *)(addr))
-#define writel(addr, val)	*((u32 *)(addr)) = (u32)(val)
+#define readl(addr)		*((volatile u32 *)(addr))
+#define writel(addr, val)	*((volatile u32 *)(addr)) = (u32)(val)
 
 /*
  * For now just sit in an infinite loop.
