@@ -7,12 +7,19 @@
 
 #include <time.h>
 #include <stdint.h>
+#include <pthread.h>
 
 #include <r5sim/isa.h>
 #include <r5sim/csr.h>
+#include <r5sim/list.h>
+
+/*
+ * A max depth of 4 seems like a reasonable place to start; if this needs
+ * to be increased that's easy enough.
+ */
+#define R5SIM_TRAP_DEPTH_MAX		4
 
 struct r5sim_machine;
-struct r5sim_core;
 
 struct r5sim_core {
 	const char           *name;
@@ -23,6 +30,37 @@ struct r5sim_core {
 	struct r5sim_csr      csr_file[4096];
 
 	struct timespec	      start;
+
+	/*
+	 * Trap depth: we could, in theory, support infinite traps but
+	 * in practice this is not useful. Instead, if after a certain
+	 * number of traps, it's probably better to just terminate the
+	 * simulator with a debug dump or the like.
+	 */
+	u32                   trap_depth;
+
+	/*
+	 * Priv level - currently only machine (0x2) is supported.
+	 */
+	u32                   priv;
+
+	/*
+	 * Interrupt related fields for machine mode; currently this is
+	 * all we support, so that's all there is.
+	 *
+	 * To signal an interrupt an external device should call the
+	 * r5sim_core_signal_intr() function. This will handle signaling
+	 * the relevant core. intr_lock protects all these fields. If
+	 * any CSR needs to access or modify one of these fields it too
+	 * must get the lock.
+	 */
+	struct list_head      intrs;
+	pthread_mutex_t       intr_lock;
+	u32                   intr_trigger;
+	u32                   mie;
+	u32                   mip;
+
+	u32                   mstatus;
 
 	/*
 	 * Machine this core belongs to; relevant for handling IO, DRAM
@@ -40,6 +78,17 @@ struct r5sim_core {
 	 */
 	int (*exec_one)(struct r5sim_machine *mach,
 			struct r5sim_core *core);
+};
+
+/*
+ * A single, pending interrupt; each core maintais a list of these.
+ * Interrupt sources may enqueue an interrupt; the core will dequeue
+ * interrupts after each instruction executes.
+ */
+struct r5sim_core_interrupt {
+	u32              cause;
+
+	struct list_head intr_node;
 };
 
 static inline void __set_reg(
@@ -68,16 +117,10 @@ void r5sim_core_exec(struct r5sim_machine *mach,
 		     u32 pc);
 void r5sim_core_describe(struct r5sim_core *core);
 
-/*
- * Ask the core to execute a trap.
- *
- * This will execute a series of .exec_one() calls, corresponding
- * to the trap handler. When this returns the main execution loop
- * will continue executing, but with a potentially new PC.
- */
-int r5sim_core_trap(struct r5sim_machine *mach,
-		    struct r5sim_core *core,
-		    u32 code);
+int  r5sim_core_intr_pending(struct r5sim_core *core);
+void r5sim_core_intr_signal(struct r5sim_core *core, u32 src);
+struct r5sim_core_interrupt *r5sim_core_intr_next(
+	struct r5sim_core *core);
 
 const char *r5sim_reg_to_abi_str(u32 reg);
 const char *r5sim_reg_to_str(u32 reg);

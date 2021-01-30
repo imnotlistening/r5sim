@@ -9,7 +9,7 @@
 CC        = riscv64-linux-gnu-gcc
 
 # Add some special R5 options!
-CFLAGS    += -ffreestanding -march=rv32im -mabi=ilp32 \
+CFLAGS    += -ffreestanding -march=rv32im -mabi=ilp32 -O2 -g \
              -Wl,--build-id=none -nostartfiles -nodefaultlibs -T conftest.lds
 
 INCLUDES  = -I$(R5SIM_DIR)/include

@@ -616,6 +616,10 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 	r5_inst *inst;
 	int strap;
 
+	/*
+	 * Fix: should be returned by the control flow instructions, not
+	 * the actual instruction fetch.
+	 */
 	if (mach->memload32(mach, core->pc, &inst_mem))
 		return TRAP_INST_ADDR_MISALIGN;
 

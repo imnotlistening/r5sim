@@ -7,6 +7,8 @@
 
 #include "types.h"
 
+#include <r5sim/hw/csr.h>
+
 #define read_csr(csr, value)			\
 	asm volatile ("csrr	%0, %1\n\t"	\
 		      : "=r" (value)		\
@@ -16,10 +18,6 @@
 	asm volatile ("csrw	%0, %1\n\t"	\
 		      :				\
 		      : "i" (csr), "r" (value))
-
-#define CSR_MISA		0x301
-#define CSR_MISA_MXL		31:30
-#define CSR_MISA_EXTENSION	25:0
 
 /*
  * Clear and then set a field to the passed value, __v.

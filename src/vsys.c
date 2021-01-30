@@ -9,6 +9,8 @@
 
 #include <r5sim/log.h>
 #include <r5sim/env.h>
+#include <r5sim/csr.h>
+#include <r5sim/core.h>
 #include <r5sim/iodev.h>
 #include <r5sim/machine.h>
 
@@ -28,6 +30,9 @@ static const char *vsys_reg_to_str(u32 reg)
 		[VSYS_DRAM_SIZE]	= "VSYS_DRAM_SIZE",
 		[VSYS_IO_START]		= "VSYS_IO_START",
 		[VSYS_IO_SIZE]		= "VSYS_IO_SIZE",
+		[VSYS_TIMER_CONFIG]	= "VSYS_TIMER_CONFIG",
+		[VSYS_TIMER_INTERVAL]	= "VSYS_TIMER_ACTIVATE",
+		[VSYS_M_SW_INTERRUPT]   = "VSYS_M_SW_INTERRUPT",
 	};
 
 	r5sim_assert(reg <= VSYS_MAX_REG);
@@ -54,6 +59,16 @@ static u32 __vsys_read_state(struct vsys_priv *vsys, u32 __i)
 	r5sim_assert(i < VSYS_MAX_REG);
 
 	return vsys->dev_state[i];
+}
+
+static void vsys_trigger_msw_intr(struct r5sim_iodev *iodev,
+				  u32 value)
+{
+	struct r5sim_machine *mach = iodev->mach;
+	struct r5sim_core *core = mach->core;
+
+	if (value)
+		r5sim_core_intr_signal(core, CSR_MCAUSE_CODE_MSI);
 }
 
 static u32 vsys_readl(struct r5sim_iodev *iodev, u32 offs)
@@ -83,6 +98,9 @@ static void vsys_writel(struct r5sim_iodev *iodev,
 		break;
 	case VSYS_TIMER_CONFIG:
 		/* Not implemented yet! */
+		break;
+	case VSYS_M_SW_INTERRUPT:
+		vsys_trigger_msw_intr(iodev, val);
 		break;
 	default:
 		vsys_dbg("  Invalid WRITE.");

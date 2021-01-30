@@ -68,7 +68,7 @@ start(void)
 	u32 fail_total = 0, fail;
 	ct_test_list_fn *submodule = submodules;
 	struct ct_time start, end, diff;
-	u32 cycles_start, cycles_end;
+	u32 cycles_start = 0, cycles_end = 0;
 
 	ct_rdtime(&start);
 	cycles_start = ct_rdcycle();

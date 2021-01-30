@@ -6,7 +6,6 @@
 #define __R5SIM_MACHINE__
 
 #include <r5sim/env.h>
-
 #include <r5sim/list.h>
 
 struct r5sim_core;

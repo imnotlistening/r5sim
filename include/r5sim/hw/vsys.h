@@ -35,6 +35,12 @@
 #define VSYS_TIMER_INTERVAL			0x14
 #define VSYS_TIMER_INTERVAL_VALUE		31:0
 
-#define VSYS_MAX_REG				0x20
+/*
+ * A non-zero write to this register will trigger a SW
+ * interrupt in machine mode.
+ */
+#define VSYS_M_SW_INTERRUPT			0x20
+
+#define VSYS_MAX_REG				0x30
 
 #endif

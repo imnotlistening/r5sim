@@ -92,6 +92,12 @@ ct_rdtime:
 	ret
 
 /*
+ * External symbols defined in trap.c.
+ */
+.globl intr_handlers
+.globl trap_entrance
+
+/*
  * Trap vector trampoline. This will be jumped to when a trap occurs.
  * From there we call the C mode trap handler trap_entrance().
  *
@@ -103,8 +109,7 @@ ct_rdtime:
  * context's execution environment. To do that we'll start by writing
  * all of the context's registers onto the stack. When we return we'll
  * pop them.
-*/
-.globl trap_entrance
+ */
 .globl __trap_vector
 __trap_vector:
 	addi	sp,sp,-120
@@ -141,16 +146,50 @@ __trap_vector:
 
 	csrr	a0,0x341	/* CSR_MEPC */
 	csrr	a1,0x342	/* CSR_MCAUSE */
-	jal	trap_entrance
+	mv	s0, a1
+
+	la	t0, trap_entrance
+
+	/*
+	 * If it's a sync trap, just call trap_entrance, which is
+	 * already present in t0. Otherwise we'll update t0 to
+	 * point to the correct interrupt handler.
+	 */
+	bgtz	a1, 1f
+
+	/* Firstly, clear the sign bit in mcause */
+	li	t2, 0x7fffffff
+	and	a1, a1, t2
+
+	/*
+	 * Compute address of interrupt function in interrupt table.
+	 */
+	slli	t2, a1, 2
+	la	t1, intr_handlers
+	add	t1, t1, t2
+	lw	t0, 0(t1)
+
+1:
+	/*
+	 * Call our computed handler.
+	 */
+	jalr	t0
 
 	/*
 	 * Increment the MEPC counter to the next instruction so
 	 * we don't just immediately trap again.
+	 *
+	 * This is a hack for the traps here, since we don't actually
+	 * handle the traps. Instead we just skip the "bad" instuction.
+	 * Interrupts, on the other hand, do need to return to the
+	 * instruction they actually interrupted.
 	 */
+	bltz	s0, 2f
 	csrr	t0,0x341
 	addi	t0,t0,4
 	csrw	0x341,t0
 
+2:
 	lw	ra,  0(sp)
 	lw	gp,  4(sp)
 	lw	tp,  8(sp)

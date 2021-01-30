@@ -2,7 +2,6 @@
  * Basic CPU core interfaces.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 
 #include <time.h>
@@ -14,10 +13,103 @@
 #include <r5sim/trap.h>
 #include <r5sim/util.h>
 
-static void r5sim_core_halt(struct r5sim_core *core)
+/*
+ * To execute a trap we must:
+ *
+ *   Save the current PC to the xEPC CSR based on current priviledge
+ *   mode and save the code to MCAUSE. Currently there's no support
+ *   for anything except MMode so we can forgo worrying about the
+ *   priv level.
+ *
+ *   Load and compute the interrupt vector base. Note that this
+ *   assumes the interrupt setting will have only one bit ever set
+ *   at a time. This may not be viable, long term.
+
+ *   Set the priviledge mode to MODE_MACHINE. We don't do anything
+ *   here at the moment sicne we only support mmode. Eventually we'll
+ *   have S mode and will need to work out delegation considerations
+ *   for priv levels and stuff. For now, this is a no-op.
+ *
+ *   Begin executing instructions at the computed interrupt vector.
+ *
+ *   Reload PC with xEPC.
+ *
+ * Once this function returns the regular execution stream resumes.
+ */
+static int __r5sim_core_trap(struct r5sim_machine *mach,
+			     struct r5sim_core *core,
+			     u32 code, u32 intr)
 {
-	r5sim_info("Core HALT'ing!\n");
-	r5sim_core_describe(core);
+	u32 mtvec, base, mode;
+	u32 mcause = 0;
+
+	/*
+	 * First - check the depth and see if we should teminate. We
+	 * don't want infinite traps. Otherwise increment our trap depth
+	 * and proceed.
+	 */
+	if (core->trap_depth >= R5SIM_TRAP_DEPTH_MAX)
+		return -1;
+	core->trap_depth += 1;
+
+	set_field(mcause, CSR_MCAUSE_CODE,      code);
+	set_field(mcause, CSR_MCAUSE_INTERRUPT, intr);
+
+	/* Save PC to MEPC and load MCASUE. SW will need this. */
+	csr_write(core, CSR_MEPC,   core->pc);
+	csr_write(core, CSR_MCAUSE, mcause);
+
+	mtvec = csr_read(core, CSR_MTVEC);
+
+	/*
+	 * Compute trap vector; it's always just base for synchronous
+	 * exceptions. But for interrupts we have to check the VECTORED
+	 * field. Currently we assume that mcause will only have one bit
+	 * set for interrupts... Hmm.
+	 */
+	base  = get_field(mtvec, CSR_MTVEC_BASE);
+	mode  = get_field(mtvec, CSR_MTVEC_MODE);
+
+	if (intr && mode == CSR_MTVEC_MODE_VECTORED)
+		base += (mcause << 2);
+
+	r5sim_dbg("Trap detected @ PC=0x%08x.\n", core->pc);
+	r5sim_dbg("  MCAUSE: 0x%08x\n", mcause);
+	r5sim_dbg("    intr:  %s\n", intr ? "yes" : "no");
+	r5sim_dbg("    depth: %d\n", core->trap_depth);
+	r5sim_dbg("  MTVEC:  0x%08x\n", mtvec);
+	r5sim_dbg("    Base: 0x%08x\n", base);
+	r5sim_dbg("    Mode: %s\n", mode ? "vectored" : "direct");
+
+	r5sim_core_exec(mach, core, base);
+
+	r5sim_dbg("Trap returned.\n");
+
+	core->pc = csr_read(core, CSR_MEPC);
+	core->trap_depth -= 1;
+
+	return 0;
+}
+
+static int r5sim_core_intr(struct r5sim_machine *mach,
+			   struct r5sim_core *core)
+{
+	struct r5sim_core_interrupt *intr = r5sim_core_intr_next(core);
+	u32 cause;
+
+	r5sim_assert(intr);
+
+	cause = intr->cause;
+	free(intr);
+
+	return __r5sim_core_trap(mach, core, cause, 1);
+}
+
+static int r5sim_core_sync_trap(struct r5sim_machine *mach,
+				struct r5sim_core *core,
+				u32 code)
+{
+	return __r5sim_core_trap(mach, core, code, 0);
 }
 
 /*
@@ -37,6 +129,18 @@ static void r5sim_core_incr(struct r5sim_core *core)
 		core->csr_file[CSR_INSTRETH].value += 1;
 }
 
+static int __core_should_handle_intr(struct r5sim_core *core)
+{
+	/*
+	 * If an interrupt signal is pending, then check to see if
+	 * we have any unmasked interrupts. If we do, then we should
+	 * handle the interrupt.
+	 */
+	return r5sim_core_intr_pending(core) &&
+		get_field(core->mstatus, CSR_MSTATUS_MIE) &&
+		(core->mie & core->mip);
+}
+
 /*
  * Start execution on a RISC-V core!
  *
@@ -48,26 +152,77 @@ void r5sim_core_exec(struct r5sim_machine *mach,
 {
 	core->pc = pc;
 
-	r5sim_info("Execution begins @ 0x%08x\n", pc);
-
 	while (1) {
-		int strap;
+		int trap;
 
 		/*
 		 * Execute the primary instruction stream until we get
 		 * an exception.
 		 */
-		while ((strap = core->exec_one(mach, core)) == 0)
-			r5sim_core_incr(core);
+		while (1) {
+			trap = core->exec_one(mach, core);
+
+			/*
+			 * Check if we should just continue on to the next
+			 * instruction. If any of the following is true, then
+			 * we'll break out of the main execution loop and
+			 * service the trap or interrupt.
+			 *
+			 *   - A synchronous trap has been enountered;
+			 *   - We have a pending interrupt signal _and_
+			 *   - There's an unmasked interrupt bit set.
+			 */
+			if (!trap &&
+			    !__core_should_handle_intr(core)) {
+				r5sim_core_incr(core);
+				continue;
+			}
+
+			/*
+			 * A return from trap;
+			 */
+			if (trap == TRAP_MRET) {
+				r5sim_core_incr(core);
+				return;
+			}
+
+			/*
+			 * Otherwise if there's a trap we'll definitely
+			 * need to break. However, for an interrupt we
+			 * break _after_ the last executed instruction
+			 * where as for a trap we are breaking _before_
+			 * the instruction has effectively executed.
+			 *
+			 * Note, though, that really we test for there
+			 * not being a trap; you could have both an
+			 * exception and a trap at exactly the same time.
+			 */
+			if (!trap)
+				r5sim_core_incr(core);
+
+			break;
+		}
 
 		/*
-		 * We broke from the above loop. That means we got an
-		 * exception. Handle it. If we fail to handle the
-		 * exception then just HALT for now. No nested trap
-		 * handling.
+		 * We broke from the above loop. That means we got either
+		 * a trap or an interrupt (or both). Handle it.
+		 *
+		 * If we fail to handle the exception then just HALT for
+		 * now. No nested trap handling.
+		 *
+		 * Ugh. Ok. We'll prioritize interrupts over traps but we
+		 * have to make sure we don't take an interrupt if
+		 * interrupts are globally disabled or there's no unmasked
+		 * interrupts pending.
 		 */
-		if (r5sim_core_trap(mach, core, (u32)strap))
-			break;
+		if (__core_should_handle_intr(core)) {
+			if (r5sim_core_intr(mach, core))
+				break;
+		} else {
+			r5sim_assert(trap);
+			if (r5sim_core_sync_trap(mach, core, (u32)trap))
+				break;
+		}
 
 		/*
 		 * Otherwise, once we are done with the trap, resume
@@ -75,103 +230,17 @@ void r5sim_core_exec(struct r5sim_machine *mach,
 		 */
 	}
 
-	r5sim_core_halt(core);
-
 	return;
 }
 
-static int r5sim_core_exec_trap(
-	struct r5sim_machine *mach,
-	struct r5sim_core *core,
-	u32 pc)
+void r5sim_core_init_common(struct r5sim_core *core)
 {
-	u32 ret;
+	pthread_mutex_init(&core->intr_lock, NULL);
+	INIT_LIST_HEAD(&core->intrs);
 
-	core->pc = pc;
+	r5sim_core_default_csrs(core);
 
-	while (1) {
-		ret = core->exec_one(mach, core);
-
-		/*
-		 * We are done with the trap! Yay.
-		 */
-		if (ret == TRAP_MRET)
-			break;
-
-		/*
-		 * If we get a 0 back, this was just a regular
-		 * instruction.
-		 */
-		if (ret == 0) {
-			r5sim_core_incr(core);
-			continue;
-		}
-
-		/*
-		 * Otherwise we have another exception: abort for now.
-		 */
-		r5sim_err("Cannot handle nested trap!\n");
-		r5sim_core_halt(core);
-		r5sim_assert(0);
-	}
-
-	return 0;
-}
-
-/*
- * To execute a trap we must:
- *
- *   1. Save the current PC to the xEPC CSR based on current priviledge
- *      mode and save the code to MCAUSE.
- *   2. Load the interrupt vector base.
- *   3. Compute the vector offset based on MTVEC_MODE.
- *   4. Set the priviledge mode to MODE_MACHINE.
- *      a. Eventually we'll have S mode and will need to work out
- *         delegation considerations; for now we don't support that
- *         so we are done.
- *   5. Begin executing instructions at the computed interrupt vector.
- *   6. Reload PC with xEPC.
- *
- * Once this function returns the regular execution stream resumes.
- */
-int r5sim_core_trap(struct r5sim_machine *mach,
-		    struct r5sim_core *core,
-		    u32 code)
-{
-	u32 mtvec, base, mode;
-	u32 mcause = 0;
-
-	set_field(mcause, CSR_MCAUSE_CODE, code);
-
-	/* 1. Save PC to MEPC. */
-	csr_write(core, CSR_MEPC, core->pc);
-	csr_write(core, CSR_MCAUSE, mcause);
-
-	/* 2. Load the interrupt vector base. */
-	mtvec = csr_read(core, CSR_MTVEC);
-
-	/*
-	 * 3. Compute vector; it's always just base for synchronous
-	 * exceptions.
-	 */
-	base  = get_field(mtvec, CSR_MTVEC_BASE);
-	mode  = get_field(mtvec, CSR_MTVEC_MODE);
-
-	r5sim_dbg("Trap detected.\n");
-	r5sim_dbg("  MCAUSE: 0x%08x\n", mcause);
-	r5sim_dbg("  MTVEC:  0x%08x\n", mtvec);
-	r5sim_dbg("    Base: 0x%08x\n", base);
-	r5sim_dbg("    Mode: %s\n", mode ? "vectored" : "direct");
-
-	/* 4: Skipped. */
-
-	/* 5: Skipped. */
-	r5sim_core_exec_trap(mach, core, base);
-
-	/* 6. Reload PC with xEPC */
-	core->pc = csr_read(core, CSR_MEPC);
-
-	return 0;
+	clock_gettime(CLOCK_MONOTONIC_COARSE, &core->start);
 }
 
 void r5sim_core_describe(struct r5sim_core *core)
