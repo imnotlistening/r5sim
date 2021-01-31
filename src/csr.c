@@ -51,9 +51,9 @@ static void csr_mie_write(struct r5sim_core *core,
 			  u32 type, u32 *value)
 {
 	/*
-	 * We only support the MSW interrupt atm...
+	 * We only support the MSI/MTI interrupts atm.
 	 */
-	const u32 mie_mask = 0x8;
+	const u32 mie_mask = 0x88;
 
 	*value &= mie_mask;
 

@@ -75,6 +75,12 @@ static void intr_msi(u32 trap_pc, u32 code)
 	write_csr(CSR_MIP, 1 << code);
 }
 
+static void intr_timer(u32 trap_pc, u32 code)
+{
+	/* Just clear the interrupt. */
+	write_csr(CSR_MIP, 1 << code);
+}
+
 static void __unknown_intr(u32 trap_pc, u32 code)
 {
 	printf("Unknown interrupt:\n");
@@ -94,7 +100,7 @@ intr_handler intr_handlers[16] = {
 	__unknown_intr,
 	__unknown_intr,
 	__unknown_intr,
-	__unknown_intr,
+	intr_timer,
 
 	__unknown_intr,
 	__unknown_intr,

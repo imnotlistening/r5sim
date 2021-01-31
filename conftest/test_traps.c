@@ -50,7 +50,33 @@ static int ct_test_ecall(void *data)
 	return (end - start) > 62;
 }
 
-__attribute__((unused))
+static int ct_test_timer_intr(void *data)
+{
+	u32 start, end;
+	u32 config = 0;
+
+	set_field(config,
+		  VSYS_TIMER_CONFIG_PRECISION,
+		  VSYS_TIMER_CONFIG_PRECISION_MSECS);
+	set_field(config,
+		  VSYS_TIMER_CONFIG_ACTIVATE,
+		  VSYS_TIMER_CONFIG_ACTIVATE_TRIGGER);
+
+	read_csr(CSR_CYCLE, start);
+
+	/*
+	 * Configure and trigger the timer.
+	 */
+	writel(VSYS_BASE + VSYS_TIMER_INTERVAL, 10);
+	writel(VSYS_BASE + VSYS_TIMER_CONFIG,   config);
+
+	__asm__ volatile("wfi\n\t");
+
+	read_csr(CSR_CYCLE, end);
+
+	return (end - start) > 62;
+}
+
 static int ct_test_sw_intr(void *data)
 {
 	u32 start, end;
@@ -79,6 +105,7 @@ static const struct ct_test op_traps[] = {
 	CT_TEST(ct_test_illegal_inst,		NULL,			"illegal_inst"),
 	CT_TEST(ct_test_ecall,			NULL,			"ecall"),
 	CT_TEST(ct_test_sw_intr,		NULL,			"sw_intr"),
+	CT_TEST(ct_test_timer_intr,		NULL,			"timer_intr"),
 
 	/*
 	 * NULL terminate.

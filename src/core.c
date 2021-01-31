@@ -427,6 +427,8 @@ const char *r5sim_system_func3_to_str(u32 func3, u32 csr)
 			return "ERR";
 		case 0x302: /* MRET */
 			return "MRET";
+		case 0x105: /* WFI */
+			return "WFI";
 		}
 	case 0x1: /* CSRRW */
 		return "CSRRW";

@@ -511,6 +511,9 @@ static int exec_system(struct r5sim_machine *mach,
 		case 0x302: /* MRET */
 			ret = TRAP_MRET;
 			break;
+		case 0x105: /* WFI */
+			r5sim_core_wfi(core);
+			break;
 		}
 		break;
 	case 0x1: /* CSRRW */

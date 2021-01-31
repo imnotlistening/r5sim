@@ -13,11 +13,26 @@
  * interrupt object when it's done with it.
  */
 
+#include <time.h>
 #include <stdlib.h>
 #include <pthread.h>
 
 #include <r5sim/log.h>
 #include <r5sim/core.h>
+
+/*
+ * Wait for an interrupt.
+ */
+void r5sim_core_wfi(struct r5sim_core *core)
+{
+	struct timespec spec = {
+		.tv_sec  = 0,
+		.tv_nsec = 500000, /* .5 milliseconds */
+	};
+
+	while (!r5sim_core_intr_pending(core))
+		nanosleep(&spec, NULL);
+}
 
 int r5sim_core_intr_pending(struct r5sim_core *core)
 {

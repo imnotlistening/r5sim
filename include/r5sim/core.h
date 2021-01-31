@@ -117,6 +117,7 @@ void r5sim_core_exec(struct r5sim_machine *mach,
 		     u32 pc);
 void r5sim_core_describe(struct r5sim_core *core);
 
+void r5sim_core_wfi(struct r5sim_core *core);
 int  r5sim_core_intr_pending(struct r5sim_core *core);
 void r5sim_core_intr_signal(struct r5sim_core *core, u32 src);
 struct r5sim_core_interrupt *r5sim_core_intr_next(

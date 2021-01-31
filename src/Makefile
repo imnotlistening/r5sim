@@ -6,7 +6,7 @@
 .SUFFIXES:
 
 INCLUDES  = -I$(R5SIM_DIR)/include
-LIBS      = -lutil
+LIBS      = -lutil -lrt
 
 BINS      = r5sim
 OBJS      = iodev.o machine.o log.o core.o core_intr.o csr.o simple_core.o

@@ -11,6 +11,7 @@
 #include <r5sim/env.h>
 #include <r5sim/csr.h>
 #include <r5sim/core.h>
+#include <r5sim/util.h>
 #include <r5sim/iodev.h>
 #include <r5sim/machine.h>
 
@@ -21,7 +22,10 @@
 #define VSYS_TIMERS	1
 
 struct vsys_priv {
-	u32 dev_state[VSYS_MAX_REG >> 2];
+	u32             dev_state[VSYS_MAX_REG >> 2];
+
+	timer_t         timer;
+	struct sigevent ev;
 };
 
 static const char *vsys_reg_to_str(u32 reg)
@@ -31,7 +35,7 @@ static const char *vsys_reg_to_str(u32 reg)
 		[VSYS_IO_START]		= "VSYS_IO_START",
 		[VSYS_IO_SIZE]		= "VSYS_IO_SIZE",
 		[VSYS_TIMER_CONFIG]	= "VSYS_TIMER_CONFIG",
-		[VSYS_TIMER_INTERVAL]	= "VSYS_TIMER_ACTIVATE",
+		[VSYS_TIMER_INTERVAL]	= "VSYS_TIMER_INTERVAL",
 		[VSYS_M_SW_INTERRUPT]   = "VSYS_M_SW_INTERRUPT",
 	};
 
@@ -59,6 +63,47 @@ static u32 __vsys_read_state(struct vsys_priv *vsys, u32 __i)
 	r5sim_assert(i < VSYS_MAX_REG);
 
 	return vsys->dev_state[i];
+}
+
+static void vsys_timer_notify(union sigval sv)
+{
+	struct r5sim_core *core = sv.sival_ptr;
+
+	r5sim_dbg("Timer fired!\n");
+
+	r5sim_core_intr_signal(core, CSR_MCAUSE_CODE_MTI);
+}
+
+static void vsys_trigger_timer(struct vsys_priv *vsys)
+{
+	struct itimerspec spec = { };
+	u64 interv = __vsys_read_state(vsys, VSYS_TIMER_INTERVAL);
+	u32 config = __vsys_read_state(vsys, VSYS_TIMER_CONFIG);
+	u32 prec = get_field(config, VSYS_TIMER_CONFIG_PRECISION);
+
+	/*
+	 * Scale the incoming time to nanoseconds; then we'll fill
+	 * in the timer spec with the right second/ns split.
+	 */
+	switch (prec) {
+	case VSYS_TIMER_CONFIG_PRECISION_SECS:
+		interv *= 1000000000;
+		break;
+	case VSYS_TIMER_CONFIG_PRECISION_MSECS:
+		interv *= 1000000;
+		break;
+	case VSYS_TIMER_CONFIG_PRECISION_USECS:
+		interv *= 1000;
+		break;
+	}
+
+	spec.it_value.tv_sec  = interv ? interv / 1000000000 : 0u;
+	spec.it_value.tv_nsec = interv % 1000000000;
+
+	timer_settime(vsys->timer, 0, &spec, NULL);
+	r5sim_dbg("Timer activated: [%ld.%ld]\n",
+		  spec.it_value.tv_sec,
+		  spec.it_value.tv_nsec);
 }
 
 static void vsys_trigger_msw_intr(struct r5sim_iodev *iodev,
@@ -97,7 +142,13 @@ static void vsys_writel(struct r5sim_iodev *iodev,
 				 val);
 		break;
 	case VSYS_TIMER_CONFIG:
-		/* Not implemented yet! */
+		__vsys_set_state(iodev->priv,
+				 VSYS_TIMER_CONFIG,
+				 val);
+
+		/* Now (potentially) trigger the timer. */
+		if (get_field(val, VSYS_TIMER_CONFIG_ACTIVATE))
+			vsys_trigger_timer(iodev->priv);
 		break;
 	case VSYS_M_SW_INTERRUPT:
 		vsys_trigger_msw_intr(iodev, val);
@@ -142,6 +193,16 @@ struct r5sim_iodev *r5sim_vsys_load_new(struct r5sim_machine *mach,
 	__vsys_set_state(priv, VSYS_DRAM_SIZE,  mach->memory_size);
 	__vsys_set_state(priv, VSYS_IO_START,   mach->iomem_base);
 	__vsys_set_state(priv, VSYS_IO_SIZE,    mach->iomem_size);
+
+	/*
+	 * Init timer for the vsys.
+	 */
+	priv->ev.sigev_notify = SIGEV_THREAD;
+	priv->ev.sigev_value.sival_ptr = mach->core;
+	priv->ev.sigev_notify_function = vsys_timer_notify;
+
+	if (timer_create(CLOCK_REALTIME, &priv->ev, &priv->timer))
+		r5sim_assert(!"timer_create: failed!");
 
 	return dev;
 }
