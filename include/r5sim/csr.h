@@ -16,7 +16,11 @@ typedef void (*r5sim_csr_rdfn)(struct r5sim_core *core,
 			       struct r5sim_csr *csr);
 typedef void (*r5sim_csr_wrfn)(struct r5sim_core *core,
 			       struct r5sim_csr *csr,
-			       u32 *value);
+			       u32 type, u32 *value);
+
+#define CSR_WRITE	0
+#define CSR_SET		1
+#define CSR_CLR		2
 
 struct r5sim_csr {
 	u32	value;

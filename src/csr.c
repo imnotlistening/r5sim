@@ -18,15 +18,26 @@ static void csr_mstatus_read(struct r5sim_core *core,
 
 static void csr_mstatus_write(struct r5sim_core *core,
 			      struct r5sim_csr *csr,
-			      u32 *value)
+			      u32 type, u32 *value)
 {
 	/*
 	 * We only support a few fields in MSTATUS at the moment.
 	 */
 	const u32 mstatus_mask = 0x1888;
 
-	core->mstatus |= (*value & mstatus_mask);
+	*value &= mstatus_mask;
 
+	switch (type) {
+	case CSR_WRITE:
+		core->mstatus = *value;
+		break;
+	case CSR_SET:
+		core->mstatus |= *value;
+		break;
+	case CSR_CLR:
+		core->mstatus &= ~(*value);
+		break;
+	}
 }
 
 static void csr_mie_read(struct r5sim_core *core,
@@ -37,14 +48,26 @@ static void csr_mie_read(struct r5sim_core *core,
 
 static void csr_mie_write(struct r5sim_core *core,
 			  struct r5sim_csr *csr,
-			  u32 *value)
+			  u32 type, u32 *value)
 {
 	/*
 	 * We only support the MSW interrupt atm...
 	 */
 	const u32 mie_mask = 0x8;
 
-	core->mie |= (*value & mie_mask);
+	*value &= mie_mask;
+
+	switch (type) {
+	case CSR_WRITE:
+		core->mie = *value;
+		break;
+	case CSR_SET:
+		core->mie |= *value;
+		break;
+	case CSR_CLR:
+		core->mie &= ~(*value);
+		break;
+	}
 }
 
 /*
@@ -161,7 +184,7 @@ void __csr_w(struct r5sim_core *core, u32 rd, u32 value, u32 csr)
 
 	if ((csr_reg->flags & CSR_F_WRITE) != 0) {
 		if (csr_reg->write_fn)
-			csr_reg->write_fn(core, csr_reg, &value);
+			csr_reg->write_fn(core, csr_reg, CSR_WRITE, &value);
 		__raw_csr_write(csr_reg, value);
 		r5sim_dbg("CSR [W] a=0x%04x v=0x%08x\n", csr, value);
 	}
@@ -177,7 +200,7 @@ void __csr_s(struct r5sim_core *core, u32 rd, u32 value, u32 csr)
 
 	if ((csr_reg->flags & CSR_F_WRITE) != 0) {
 		if (csr_reg->write_fn)
-			csr_reg->write_fn(core, csr_reg, &value);
+			csr_reg->write_fn(core, csr_reg, CSR_SET, &value);
 		__raw_csr_set_mask(csr_reg, value);
 		r5sim_dbg("CSR [S] a=0x%04x v=0x%08x\n", csr, value);
 	}
@@ -193,7 +216,7 @@ void __csr_c(struct r5sim_core *core, u32 rd, u32 value, u32 csr)
 
 	if ((csr_reg->flags & CSR_F_WRITE) != 0) {
 		if (csr_reg->write_fn)
-			csr_reg->write_fn(core, csr_reg, &value);
+			csr_reg->write_fn(core, csr_reg, CSR_CLR, &value);
 		__raw_csr_clear_mask(csr_reg, value);
 		r5sim_dbg("CSR [C] a=0x%04x v=0x%08x\n", csr, value);
 	}

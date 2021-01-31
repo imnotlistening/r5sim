@@ -102,7 +102,14 @@ static int r5sim_core_intr(struct r5sim_machine *mach,
 	cause = intr->cause;
 	free(intr);
 
-	return __r5sim_core_trap(mach, core, cause, 1);
+	/*
+	 * If the cause is unmasked, then we do an actual interrupt.
+	 * Otherwise we'll just return.
+	 */
+	if (core->mie & (1 << cause))
+		return __r5sim_core_trap(mach, core, cause, 1);
+
+	return 0;
 }
 
 static int r5sim_core_sync_trap(struct r5sim_machine *mach,
