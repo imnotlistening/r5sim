@@ -85,6 +85,38 @@ static u32 virt_disk_readl(struct r5sim_iodev *iodev, u32 offs)
 	return __vdisk_read_state(iodev->priv, offs);
 }
 
+static void virt_disk_do_copy(struct virt_disk_priv *priv,
+			      struct r5sim_machine *mach,
+			      u32 op,
+			      u32 dram_addr,
+			      u32 page_start,
+			      u32 pages)
+{
+	u32 disk_start = page_start * KB(4);
+	u32 disk_bytes = pages * KB(4);
+
+	if (disk_start >= priv->size) {
+		vdisk_dbg("Read overrun!\n");
+		return;
+	}
+
+	/*
+	 * Only copy up to the size of the disk.
+	 */
+	if (disk_start + disk_bytes >= priv->size)
+		disk_bytes = priv->size - disk_start - 1;
+
+	if (op == VDISK_OP_COPY_TO_DRAM)
+		memcpy(mach->memory + (dram_addr - mach->memory_base),
+		       priv->mmap + disk_start,
+		       disk_bytes);
+	else
+		memcpy(priv->mmap + disk_start,
+		       mach->memory + (dram_addr - mach->memory_base),
+		       disk_bytes);
+
+}
+
 static void virt_disk_exec_op(struct r5sim_iodev *iodev)
 {
 	struct virt_disk_priv *priv = iodev->priv;
@@ -107,13 +139,11 @@ static void virt_disk_exec_op(struct r5sim_iodev *iodev)
 	vdisk_dbg("  Pages:       %u\n", pages);
 
 	if (op & VDISK_OP_COPY_TO_DRAM)
-		memcpy(mach->memory + (dram_addr - mach->memory_base),
-		       priv->mmap + page_start * KB(4),
-		       pages * KB(4));
+		virt_disk_do_copy(priv, mach, VDISK_OP_COPY_TO_DRAM,
+				  dram_addr, page_start, pages);
 	else
-		memcpy(priv->mmap + page_start * KB(4),
-		       mach->memory + (dram_addr - mach->memory_base),
-		       pages * KB(4));
+		virt_disk_do_copy(priv, mach, VDISK_OP_COPY_TO_DISK,
+				  dram_addr, page_start, pages);
 }
 
 static void virt_disk_writel(struct r5sim_iodev *iodev,
