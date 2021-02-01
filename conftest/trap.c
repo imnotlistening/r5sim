@@ -41,6 +41,7 @@ int trap_setup(void)
 
 	set_field(mstatus, CSR_MSTATUS_MIE, 1);
 	set_field(mie,     CSR_MIE_MSIE,    1);
+	set_field(mie,     CSR_MIE_MTIE,    1);
 
 	write_csr(CSR_MSTATUS, mstatus);
 	write_csr(CSR_MIE,     mie);

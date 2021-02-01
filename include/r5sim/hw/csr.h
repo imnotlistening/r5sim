@@ -32,6 +32,7 @@
 
 #define CSR_MIE			0x304
 #define CSR_MIE_MSIE		3:3
+#define CSR_MIE_MTIE		7:7
 
 #define CSR_MTVEC		0x305
 #define CSR_MTVEC_BASE		31:2
