@@ -7,22 +7,22 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 
 # Build C based programs and tests from your list of $(OBJS).
 % : %.c $(OBJS) $(DEPFILES) | $(DEPDIR)
-	@echo "  [CC]		$@"
+	@echo "  [CCLD]\t$@"
 	@$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -o $@ $@.c $(OBJS) $(LIBS)
 
 # Build C based object files.
 %.o : %.c $(DEPDIR)/%.d | $(DEPDIR)
-	@echo "  [CC]		$@"
+	@echo "  [CC]\t\t$@"
 	@$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
 # Assemble programs.
 % : %.S $(OBJS) $(DEPFILES) | $(DEPDIR)
-	@echo "  [AS]		$@"
+	@echo "  [ASLD]\t$@"
 	@$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -o $@ $@.S $(OBJS) $(LIBS)
 
 # Assemble object files.
 %.o : %.S $(DEPDIR)/%.d | $(DEPDIR)
-	@echo "  [AS]		$@"
+	@echo "  [AS]\t\t$@"
 	@$(R5CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
 $(DEPDIR):
