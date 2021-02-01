@@ -7,32 +7,33 @@
 
 # Overwrite the CC to a riscv X-compiler.
 CC        = riscv64-linux-gnu-gcc
+LD        = riscv64-linux-gnu-ld
 
 # Add some special R5 options!
-CFLAGS    += -ffreestanding -march=rv32im -mabi=ilp32 -O2 -g \
-             -Wl,--build-id=none -nostartfiles -nodefaultlibs -T conftest.lds
+CFLAGS    += -ffreestanding -march=rv32im -mabi=ilp32 -O2
+LDFLAGS   = -melf32lriscv -nostartfiles -nostdlib -nodefaultlibs -T conftest.lds
 
 INCLUDES  = -I$(R5SIM_DIR)/include
 
-BINS      = conftest
-OBJS      = start.o print.o trap.o sys.o
-
-OBJS      += test_env.o \
-	     test_system.o \
-	     test_ldst.o \
-	     test_muldiv.o \
-	     test_op.o \
-	     test_traps.o
+OBJS      = conftest.o \
+            start.o \
+            print.o \
+            trap.o \
+            sys.o \
+            test_env.o \
+	    test_system.o \
+	    test_ldst.o \
+	    test_muldiv.o \
+	    test_op.o \
+	    test_traps.o
 
 .PHONY: all clean install
 
-all: $(BINS)
+all: conftest.bin
 	@echo > /dev/null
 
 install:
-	@for b in $(BINS); do \
-		riscv64-linux-gnu-objcopy -O binary $$b $(INSTALL)/$$b ; \
-	done
+	@riscv64-linux-gnu-objcopy -O binary conftest.bin $(INSTALL)/conftest
 
 clean:
 	@rm -rf $(OBJS) $(BINS) .deps

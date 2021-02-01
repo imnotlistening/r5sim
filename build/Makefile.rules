@@ -5,25 +5,24 @@
 DEPDIR := .deps
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 
-# Build C based programs and tests from your list of $(OBJS).
-% : %.c $(OBJS) $(DEPFILES) | $(DEPDIR)
-	@echo "  [CCLD]\t$@"
-	@$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -o $@ $@.c $(OBJS) $(LIBS)
-
 # Build C based object files.
 %.o : %.c $(DEPDIR)/%.d | $(DEPDIR)
 	@echo "  [CC]\t\t$@"
 	@$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
-# Assemble programs.
-% : %.S $(OBJS) $(DEPFILES) | $(DEPDIR)
-	@echo "  [ASLD]\t$@"
-	@$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -o $@ $@.S $(OBJS) $(LIBS)
-
 # Assemble object files.
 %.o : %.S $(DEPDIR)/%.d | $(DEPDIR)
 	@echo "  [AS]\t\t$@"
-	@$(R5CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+	@$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+
+% : %.c $(OBJS)
+	@echo "  [CC]\t\t$@"
+	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+
+# Link binary blobs; for free standing things.
+%.bin : $(OBJS)
+	@echo "  [LD]\t\t$@"
+	@$(LD) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 $(DEPDIR):
 	@mkdir -p $@

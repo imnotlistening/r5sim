@@ -7,27 +7,23 @@
 
 # Overwrite the CC to a riscv X-compiler.
 CC        = riscv64-linux-gnu-gcc
+LD        = riscv64-linux-gnu-ld
 
 # Add some special R5 options!
-CFLAGS    += -ffreestanding -march=rv32i -mabi=ilp32    \
-             -Wl,--build-id=none -nostartfiles -nodefaultlibs -T brom.lds
+CFLAGS    += -ffreestanding -march=rv32i -mabi=ilp32
+LDFLAGS   = -melf32lriscv -nostartfiles -nostdlib -nodefaultlibs -T brom.lds
 
 INCLUDES  = -I$(R5SIM_DIR)/include
 
-LIBS      =
-
-BINS      = brom
-OBJS      = start.o
+OBJS      = brom.o start.o
 
 .PHONY: all clean install
 
-all: $(BINS)
+all: brom.bin
 	@echo > /dev/null
 
 install:
-	@for b in $(BINS); do \
-		riscv64-linux-gnu-objcopy -O binary $$b $(INSTALL)/$$b ; \
-	done
+	@riscv64-linux-gnu-objcopy -O binary brom.bin $(INSTALL)/brom
 
 clean:
 	@rm -rf $(OBJS) $(BINS) .deps

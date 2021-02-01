@@ -7,6 +7,7 @@
 
 # Default host CC and some basic CFLAGS.
 CC        = gcc
+LD        = ld
 CFLAGS    = -Wall -Werror
 
 R5SIM_DIR = $(PWD)
