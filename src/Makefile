@@ -7,6 +7,7 @@
 
 INCLUDES  = -I$(R5SIM_DIR)/include
 LIBS      = -lutil -lrt
+CFLAGS    += -ggdb -O2 -Wall
 
 OBJS      = r5sim.o \
 	    iodev.o \
@@ -20,19 +21,6 @@ OBJS      = r5sim.o \
             vdisk.o \
             vsys.o
 
-CFLAGS    += -ggdb -O2 -Wall
-
-.PHONY: all clean install
-
-all: r5sim
-	@echo > /dev/null
-
-install:
-	@cp r5sim $(INSTALL)
-
-clean:
-	@rm -rf $(OBJS) $(BINS) .deps
-
-.PRECIOUS: $(OBJS)
+APP       = r5sim
 
 include $(R5SIM_DIR)/build/Makefile.rules

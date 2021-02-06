@@ -29,10 +29,7 @@ $(INSTALL):
 	@mkdir -p $(INSTALL)
 
 $(SUBDIRS):  | $(INSTALL)
-	@echo "Building: $@"
-	@+$(MAKE) --no-print-directory -C $@
-
-	@echo "Installing: $@"
+	@+$(MAKE) --no-print-directory -C $@ all
 	@+$(MAKE) --no-print-directory -C $@ install
 
 clean:

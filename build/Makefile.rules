@@ -15,6 +15,7 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 	@echo "  [AS]\t\t$@"
 	@$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
+# Link an app using CC.
 % : %.c $(OBJS)
 	@echo "  [CC]\t\t$@"
 	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
@@ -23,6 +24,35 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 %.bin : $(OBJS)
 	@echo "  [LD]\t\t$@"
 	@$(LD) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+# Installation target for applications. It's a trivial copy.
+install-app: $(APP)
+	@if [ x$(APP) != x ]; then \
+		echo "  [INSTALL]\t"$(APP) ; \
+		cp $(APP) $(INSTALL); \
+	fi
+
+$(BIN): $(BIN).bin
+	@$(OBJCOPY) -O binary $(BIN).bin $(BIN)
+
+# Installation target for binaries; these go through objcopy
+# first.
+install-bin: $(BIN)
+	@if [ x$(BIN) != x ]; then \
+		echo "  [INSTALL]\t"$(BIN) ; \
+		cp $(BIN) $(INSTALL)/$(BIN) ; \
+	fi
+
+install: install-app install-bin
+
+# Clean target to wipe out all built files.
+clean:
+	@rm -rf $(OBJS) $(BIN) $(APP) $(BIN).bin .deps
+
+all: $(APP) $(BIN)
+	@echo >/dev/null
+
+.PRECIOUS: $(OBJS)
 
 $(DEPDIR):
 	@mkdir -p $@
