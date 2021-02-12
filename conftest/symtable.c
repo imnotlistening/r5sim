@@ -43,7 +43,7 @@ void symtable_describe(void)
 	}
 }
 
-const char *addr2sym(u32 addr)
+const char *addr2sym(u32 addr, u32 *offset)
 {
 	u32 length;
 	u32 lo, hi, mid = 0;
@@ -70,6 +70,8 @@ const char *addr2sym(u32 addr)
 
 		slowdown();
 	}
+
+	*offset = addr - symtable[lo].addr;
 
 	return symtable[lo].sym;
 }

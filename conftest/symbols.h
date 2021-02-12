@@ -16,7 +16,7 @@ struct symtable_header {
 	u32 length;
 };
 
-const char *addr2sym(u32 addr);
+const char *addr2sym(u32 addr, u32 *offset);
 void        symtable_describe(void);
 
 #endif

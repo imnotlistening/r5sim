@@ -25,8 +25,10 @@ struct stackframe {
 void backtrace(void)
 {
 	u32 fp, sp, ra, pc;
+	u32 offset;
 	u32 i = 0;
 	struct stackframe *frame;
+	const char *symbol;
 
 	stack_pointer(&sp);
 	frame_pointer(&fp);
@@ -47,7 +49,9 @@ void backtrace(void)
 		fp = frame->fp;
 		pc = frame->ra;
 
-		printf("Frame %2u: 0x%08x %s()\n", i++, pc, addr2sym(pc));
+		symbol = addr2sym(pc, &offset);
+
+		printf("Frame %2u: 0x%08x %s()+0x%x\n", i++, pc, symbol, offset);
 	}
 }
 
