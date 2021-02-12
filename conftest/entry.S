@@ -25,9 +25,11 @@
 .section	.text.boot
 _start:
 	/*
-	 * Load a stack pointer for the C code to use.
+	 * Load basic C environment. Set the frame pointer to 0 since
+	 * there is no frame here.
 	 */
 	lui	sp, %hi(DRAM_STACK)
+	mv	s0, zero
 
 	/*
 	 * Jump to start!

@@ -4,6 +4,7 @@
  */
 
 #include "conftest.h"
+#include "symbols.h"
 
 static ct_test_list_fn submodules[] = {
 	ct_env,
@@ -95,6 +96,10 @@ start(void)
 	printf("Passing tests: %u\n", pass_total);
 	printf("Failing tests: %u\n", fail_total);
 	printf("Total tests:   %u\n", pass_total + fail_total);
+	printf("\n\n");
+
+	printf("Backtrace test:\n");
+	backtrace_test();
 	printf("\n\n");
 
 	printf("Cycles:          %u\n", cycles_end - cycles_start);

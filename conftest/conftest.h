@@ -56,6 +56,9 @@ int  trap_setup(void);
 void trap_entrance(u32 trap_pc, u32 cause);
 void __trap_vector(void);
 
+void backtrace(void);
+int  backtrace_test(void);
+
 void ct_time_diff(struct ct_time *dst, struct ct_time *a, struct ct_time *b);
 void ct_ptime(struct ct_time *t, const char *str);
 

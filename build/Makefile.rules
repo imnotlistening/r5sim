@@ -23,7 +23,7 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 # Link binary blobs; for free standing things.
 %.bin : $(OBJS)
 	@echo "  [LD]\t\t$@"
-	@$(LD) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+	@$(LD) $(LDFLAGS) -o $@ $(OBJS)
 
 # Installation target for applications. It's a trivial copy.
 install-app: $(APP)
@@ -48,6 +48,7 @@ install: install-app install-bin
 # Clean target to wipe out all built files.
 clean:
 	@rm -rf $(OBJS) $(BIN) $(APP) $(BIN).bin .deps
+	@rm -rf $(EXTRA_CLEAN)
 
 all: $(APP) $(BIN)
 	@echo >/dev/null
@@ -57,7 +58,7 @@ all: $(APP) $(BIN)
 $(DEPDIR):
 	@mkdir -p $@
 
-DEPFILES := $(OBJS:%.o=$(DEPDIR)/%.d)
+DEPFILES += $(OBJS:%.o=$(DEPDIR)/%.d)
 $(DEPFILES):
 
 include $(wildcard $(DEPFILES))

@@ -1,0 +1,6 @@
+#
+# Git ignore for some of the interim files generated during the multi-phase linking.
+#
+
+symbols.S
+.symbols.S
