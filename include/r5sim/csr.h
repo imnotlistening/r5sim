@@ -35,11 +35,14 @@ struct r5sim_csr {
 	 */
 	r5sim_csr_rdfn	read_fn;
 	r5sim_csr_wrfn	write_fn;
+
+	const char *name;
 };
 
 #define r5sim_core_add_csr(core, __csr, __value, __flags)		\
 	do {								\
 		struct r5sim_csr csr = {				\
+			.name = #__csr,					\
 			.value = __value,				\
 			.flags = __flags | CSR_F_PRESENT,		\
 		};							\
@@ -49,6 +52,7 @@ struct r5sim_csr {
 #define r5sim_core_add_csr_fn(core, __csr, __value, __flags, rd, wr)	\
 	do {								\
 		struct r5sim_csr csr = {				\
+			.name = #__csr,					\
 			.value = __value,				\
 			.flags = __flags | CSR_F_PRESENT,		\
 			.read_fn = rd,					\
@@ -82,13 +86,16 @@ static inline void __raw_csr_clear_mask(struct r5sim_csr *csr,
 	csr->value &= ~value;
 }
 
-void __csr_w(struct r5sim_core *core, u32 rd, u32 value, u32 csr);
-void __csr_s(struct r5sim_core *core, u32 rd, u32 value, u32 csr);
-void __csr_c(struct r5sim_core *core, u32 rd, u32 value, u32 csr);
+int __csr_w(struct r5sim_core *core, u32 rd, u32 value, u32 csr);
+int __csr_s(struct r5sim_core *core, u32 rd, u32 value, u32 csr);
+int __csr_c(struct r5sim_core *core, u32 rd, u32 value, u32 csr);
 
 void __r5sim_core_add_csr(struct r5sim_core *core,
 			  struct r5sim_csr *csr_reg,
 			  u32 csr);
 void r5sim_core_default_csrs(struct r5sim_core *core);
+
+/* For use with get_field(). */
+#define CSR_PRIV_FIELD			9:8
 
 #endif

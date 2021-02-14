@@ -10,6 +10,7 @@
 
 #define DRAM_START	0x20000000
 #define DRAM_STACK	0x30000000
+#define DRAM_SV_STACK	0x2f000000
 
 /*
  * The bootrom loads 16Kb into the very bottom of DRAM from the
@@ -225,3 +226,145 @@ __trap_vector:
 
 	addi	sp,sp,120
 	mret
+
+/*
+ * S-Mode start function. We'll set SEPC to this.
+ */
+.globl _smode_start
+_smode_start:
+	/*
+	 * Load basic C environment. Set the frame pointer to 0 since
+	 * there is no frame here.
+	 */
+	lui	sp, %hi(DRAM_SV_STACK)
+	mv	s0, zero
+
+	/*
+	 * Jump to start!
+	 */
+	jal	sv_start
+
+	/*
+	 * Just sit in an infinite loop reading from the UART.
+	 */
+	lui	t0,%hi(0x4000000)
+.loop2:
+	lw	t1, 0(t0)
+	j	.loop2
+
+.globl intr_handlers_sv
+.globl trap_entrance_sv
+
+.globl __trap_vector_sv
+__trap_vector_sv:
+	addi	sp,sp,-120
+	sw	ra,  0(sp)
+	sw	gp,  4(sp)
+	sw	tp,  8(sp)
+	sw	t0,  12(sp)
+	sw	t1,  16(sp)
+	sw	t2,  20(sp)
+	sw	s0,  24(sp)
+	sw	s1,  28(sp)
+	sw	a0,  32(sp)
+	sw	a1,  36(sp)
+	sw	a2,  40(sp)
+	sw	a3,  44(sp)
+	sw	a4,  48(sp)
+	sw	a5,  52(sp)
+	sw	a6,  56(sp)
+	sw	a7,  60(sp)
+	sw	s2,  64(sp)
+	sw	s3,  68(sp)
+	sw	s4,  72(sp)
+	sw	s5,  76(sp)
+	sw	s6,  80(sp)
+	sw	s7,  84(sp)
+	sw	s8,  88(sp)
+	sw	s9,  92(sp)
+	sw	s10, 96(sp)
+	sw	s11, 100(sp)
+	sw	t3,  104(sp)
+	sw	t4,  108(sp)
+	sw	t5,  112(sp)
+	sw	t6,  116(sp)
+
+	csrr	a0,0x141	/* CSR_SEPC */
+	csrr	a1,0x142	/* CSR_SCAUSE */
+	mv	s0, a1
+
+	la	t0, trap_entrance_sv
+
+	/*
+	 * If it's a sync trap, just call trap_entrance, which is
+	 * already present in t0. Otherwise we'll update t0 to
+	 * point to the correct interrupt handler.
+	 */
+	bgtz	a1, 1f
+
+	/* Firstly, clear the sign bit in mcause */
+	li	t2, 0x7fffffff
+	and	a1, a1, t2
+
+	/*
+	 * Compute address of interrupt function in interrupt table.
+	 */
+	slli	t2, a1, 2
+	la	t1, intr_handlers_sv
+	add	t1, t1, t2
+	lw	t0, 0(t1)
+
+1:
+	/*
+	 * Call our computed handler.
+	 */
+	jalr	t0
+
+	/*
+	 * Increment the SEPC counter to the next instruction so
+	 * we don't just immediately trap again.
+	 *
+	 * This is a hack for the traps here, since we don't actually
+	 * handle the traps. Instead we just skip the "bad" instuction.
+	 * Interrupts, on the other hand, do need to return to the
+	 * instruction they actually interrupted.
+	 */
+	bltz	s0, 2f
+	csrr	t0,0x141
+	addi	t0,t0,4
+	csrw	0x141,t0
+
+2:
+	lw	ra,  0(sp)
+	lw	gp,  4(sp)
+	lw	tp,  8(sp)
+	lw	t0,  12(sp)
+	lw	t1,  16(sp)
+	lw	t2,  20(sp)
+	lw	s0,  24(sp)
+	lw	s1,  28(sp)
+	lw	a0,  32(sp)
+	lw	a1,  36(sp)
+	lw	a2,  40(sp)
+	lw	a3,  44(sp)
+	lw	a4,  48(sp)
+	lw	a5,  52(sp)
+	lw	a6,  56(sp)
+	lw	a7,  60(sp)
+	lw	s2,  64(sp)
+	lw	s3,  68(sp)
+	lw	s4,  72(sp)
+	lw	s5,  76(sp)
+	lw	s6,  80(sp)
+	lw	s7,  84(sp)
+	lw	s8,  88(sp)
+	lw	s9,  92(sp)
+	lw	s10, 96(sp)
+	lw	s11, 100(sp)
+	lw	t3,  104(sp)
+	lw	t4,  108(sp)
+	lw	t5,  112(sp)
+	lw	t6,  116(sp)
+
+	addi	sp,sp,120
+	sret

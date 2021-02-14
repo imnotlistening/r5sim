@@ -36,6 +36,19 @@ struct ct_time {
 };
 
 /*
+ * This is the S-Mode test's "ABI" to ask M-Mode to delegate traps
+ * to S-Mode. S-Mode will do an ECall with this variable set to true,
+ * and when that happens, M-Mode will delegate all exceptions to
+ * S-Mode.
+ */
+extern volatile u32 delegate_smode;
+extern volatile u32 m_intr_exec;
+extern volatile u32 s_intr_exec;
+extern volatile u32 m_excep_exec;
+extern volatile u32 s_excep_exec;
+extern volatile u32 expect_exception;
+
+/*
  * No need for CPU barriers on the simple_core.
  */
 #define readl(addr)		*((volatile u32 *)(addr))
@@ -52,9 +65,16 @@ void ct_sys_info(void);
 __attribute__((format (printf, 1, 2)))
 int printf(const char *fmt, ...);
 
+void start(void);
+void sv_start(void);
+void _smode_start(void);
+
 int  trap_setup(void);
 void trap_entrance(u32 trap_pc, u32 cause);
 void __trap_vector(void);
+void __trap_vector_sv(void);
+
+void trap_entrance_sv(u32 trap_pc, u32 cause);
 
 void backtrace(void);
 int  backtrace_test(void);
@@ -63,7 +83,7 @@ void ct_time_diff(struct ct_time *dst, struct ct_time *a, struct ct_time *b);
 void ct_ptime(struct ct_time *t, const char *str);
 
 /*
- * Defined in conftest.S
+ * Defined in entry.S
  */
 u32  ct_rdcycle(void);
 u32  ct_rdinstret(void);
@@ -78,6 +98,7 @@ const struct ct_test *ct_load_store(void);
 const struct ct_test *ct_muldiv(void);
 const struct ct_test *ct_op(void);
 const struct ct_test *ct_traps(void);
+const struct ct_test *ct_sv_traps(void);
 
 /*
  * This makes it easy to build lots of arithmetic ops quickly. This

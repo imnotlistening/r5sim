@@ -493,8 +493,17 @@ static int exec_system(struct r5sim_machine *mach,
 			if (inst->rs1 || inst->rd) {
 				ret = TRAP_ILLEGAL_INST;
 				goto done;
-			} else {
+			}
+
+			switch (core->priv) {
+			case RV_PRIV_M:
 				ret = TRAP_ECALL_MMODE;
+				break;
+			case RV_PRIV_S:
+				ret = TRAP_ECALL_SMODE;
+				break;
+			default:
+				r5sim_assert(!"No U-Mode yet!");
 			}
 			break;
 		case 0x1: /* EBREAK */
@@ -505,11 +514,23 @@ static int exec_system(struct r5sim_machine *mach,
 			r5sim_assert(0);
 			break;
 		case 0x2:   /* URET */
-		case 0x102: /* SRET */
 			ret = TRAP_ILLEGAL_INST;
 			goto done;
+		case 0x102: /* SRET */
+			ret = TRAP_SRET;
+			/* SRET can only be called by S-Mode. */
+			if (core->priv != RV_PRIV_S) {
+				ret = TRAP_ILLEGAL_INST;
+				goto done;
+			}
+			break;
 		case 0x302: /* MRET */
 			ret = TRAP_MRET;
+			/* MRET can only be called by M-Mode. */
+			if (core->priv != RV_PRIV_M) {
+				ret = TRAP_ILLEGAL_INST;
+				goto done;
+			}
 			break;
 		case 0x105: /* WFI */
 			r5sim_core_wfi(core);
@@ -517,22 +538,40 @@ static int exec_system(struct r5sim_machine *mach,
 		}
 		break;
 	case 0x1: /* CSRRW */
-		__csr_w(core, inst->rd, __get_reg(core, inst->rs1), csr);
+		if (__csr_w(core, inst->rd, __get_reg(core, inst->rs1), csr)) {
+			ret = TRAP_ILLEGAL_INST;
+			goto done;
+		}
 		break;
 	case 0x2: /* CSRRS */
-		__csr_s(core, inst->rd, __get_reg(core, inst->rs1), csr);
+		if (__csr_s(core, inst->rd, __get_reg(core, inst->rs1), csr)) {
+			ret = TRAP_ILLEGAL_INST;
+			goto done;
+		}
 		break;
 	case 0x3: /* CSRRC */
-		__csr_c(core, inst->rd, __get_reg(core, inst->rs1), csr);
+		if (__csr_c(core, inst->rd, __get_reg(core, inst->rs1), csr)) {
+			ret = TRAP_ILLEGAL_INST;
+			goto done;
+		}
 		break;
 	case 0x5: /* CSRRWI */
-		__csr_w(core, inst->rd, inst->rs1, csr);
+		if (__csr_w(core, inst->rd, inst->rs1, csr)) {
+			ret = TRAP_ILLEGAL_INST;
+			goto done;
+		}
 		break;
 	case 0x6: /* CSRRSI */
-		__csr_s(core, inst->rd, inst->rs1, csr);
+		if (__csr_s(core, inst->rd, inst->rs1, csr)) {
+			ret = TRAP_ILLEGAL_INST;
+			goto done;
+		}
 		break;
 	case 0x7: /* CSRRCI */
-		__csr_c(core, inst->rd, inst->rs1, csr);
+		if (__csr_c(core, inst->rd, inst->rs1, csr)) {
+			ret = TRAP_ILLEGAL_INST;
+			goto done;
+		}
 		break;
 	default:
 		ret = TRAP_ILLEGAL_INST;
@@ -649,7 +688,7 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 	if (fam->incr_pc)
 		core->pc += 4;
 
-	return 0;
+	return TRAP_ALL_GOOD;
 }
 
 struct r5sim_core *r5sim_simple_core_instance(

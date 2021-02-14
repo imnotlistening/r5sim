@@ -20,8 +20,11 @@
  */
 #define CSR_MSTATUS		0x300
 #define CSR_MSTATUS_MPP		12:11
+#define CSR_MSTATUS_SPP		8:8
 #define CSR_MSTATUS_MPIE	7:7
+#define CSR_MSTATUS_SPIE	5:5
 #define CSR_MSTATUS_MIE		3:3
+#define CSR_MSTATUS_SIE		1:1
 
 #define CSR_MISA		0x301
 #define CSR_MISA_MXL            31:30
@@ -31,8 +34,16 @@
 #define CSR_MIDELEG		0x303
 
 #define CSR_MIE			0x304
-#define CSR_MIE_MSIE		3:3
 #define CSR_MIE_MTIE		7:7
+#define CSR_MIE_STIE		5:5
+#define CSR_MIE_MSIE		3:3
+#define CSR_MIE_SSIE		1:1
+
+#define CSR_MIP			0x344
+#define CSR_MIP_MTIP		7:7
+#define CSR_MIP_STIP		5:5
+#define CSR_MIP_MSIP		3:3
+#define CSR_MIP_SSIP		1:1
 
 #define CSR_MTVEC		0x305
 #define CSR_MTVEC_BASE		31:2
@@ -57,15 +68,38 @@
 #define CSR_MCAUSE_CODE_SEI	9
 #define CSR_MCAUSE_CODE_MEI	11
 
-
 #define CSR_MTVAL		0x343
-
-#define CSR_MIP			0x344
-#define CSR_MIP_MSIP		3:3
 
 #define CSR_MVENDORID		0xF11
 #define CSR_MARCHID		0xF21
 #define CSR_MIMPID		0xF13
 #define CSR_MHARTID		0xF14
+
+/*
+ * Supervisor CSRs.
+ */
+#define CSR_SSTATUS		0x100
+#define CSR_SSTATUS_SPP		8:8
+#define CSR_SSTATUS_SPIE	5:5
+#define CSR_SSTATUS_SIE		1:1
+
+#define CSR_SIE			0x104
+#define CSR_SIE_STIE		5:5
+#define CSR_SIE_SSIE		1:1
+
+#define CSR_SIP			0x144
+#define CSR_SIP_STIP		5:5
+#define CSR_SIP_SSIP		1:1
+
+#define CSR_STVEC		0x105
+#define CSR_SSCRATCH		0x140
+#define CSR_SEPC		0x141
+
+#define CSR_SCAUSE		0x142
+#define CSR_SCAUSE_INTERRUPT	31:31
+#define CSR_SCAUSE_CODE		30:0
+
+#define CSR_STVAL		0x143
+
 
 #endif

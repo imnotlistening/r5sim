@@ -24,7 +24,8 @@ __OBJS    = entry.o \
 	    test_ldst.o \
 	    test_muldiv.o \
 	    test_op.o \
-	    test_traps.o
+	    test_traps.o \
+	    test_supervisor_traps.o
 
 DEPFILES  = $(__OBJS:%.o=$(DEPDIR)/%.d)
 DEPFILES  += $(DEPDIR)/symbols.d $(DEPDIR)/.symbols.d

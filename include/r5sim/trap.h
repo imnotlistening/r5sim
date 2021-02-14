@@ -23,10 +23,13 @@
 #define TRAP_ST_PAGE_FAULT		15 /* Store/AMO page fault */
 
 /*
- * Not really a trap, just conveys that a xRET instruction was
- * encountered. It's passed through the same return as the
- * above traps in .exec_one().
+ * Since [0, 15] are real exceptions, we need something else to convey
+ * a non-exception. We'll use negative numbers for that. This includes
+ * the xRET instructions since they need to convey status to the
+ * controlling exec loop.
  */
-#define TRAP_MRET			-1
+#define TRAP_ALL_GOOD			-1
+#define TRAP_MRET			-2
+#define TRAP_SRET			-3
 
 #endif

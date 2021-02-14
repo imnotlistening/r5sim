@@ -32,17 +32,11 @@ struct r5sim_core {
 	struct timespec	      start;
 
 	/*
-	 * Trap depth: we could, in theory, support infinite traps but
-	 * in practice this is not useful. Instead, if after a certain
-	 * number of traps, it's probably better to just terminate the
-	 * simulator with a debug dump or the like.
-	 */
-	u32                   trap_depth;
-
-	/*
-	 * Priv level - currently only machine (0x2) is supported.
+	 * Priv level for this core.
 	 */
 	u32                   priv;
+#define RV_PRIV_M	      0x3
+#define RV_PRIV_S	      0x1
 
 	/*
 	 * Interrupt related fields for machine mode; currently this is
@@ -50,15 +44,12 @@ struct r5sim_core {
 	 *
 	 * To signal an interrupt an external device should call the
 	 * r5sim_core_signal_intr() function. This will handle signaling
-	 * the relevant core. intr_lock protects all these fields. If
-	 * any CSR needs to access or modify one of these fields it too
-	 * must get the lock.
+	 * the relevant core.
 	 */
-	struct list_head      intrs;
-	pthread_mutex_t       intr_lock;
-	u32                   intr_trigger;
 	u32                   mie;
 	u32                   mip;
+	u32                   medeleg;
+	u32                   mideleg;
 
 	u32                   mstatus;
 
@@ -117,11 +108,12 @@ void r5sim_core_exec(struct r5sim_machine *mach,
 		     u32 pc);
 void r5sim_core_describe(struct r5sim_core *core);
 
+void r5sim_core_incr(struct r5sim_core *core);
 void r5sim_core_wfi(struct r5sim_core *core);
-int  r5sim_core_intr_pending(struct r5sim_core *core);
+int  r5sim_core_handle_intr(struct r5sim_core *core);
 void r5sim_core_intr_signal(struct r5sim_core *core, u32 src);
-struct r5sim_core_interrupt *r5sim_core_intr_next(
-	struct r5sim_core *core);
+void __r5sim_core_push_trap(struct r5sim_core *core,
+			    u32 priv, u32 code, u32 intr);
 
 const char *r5sim_reg_to_abi_str(u32 reg);
 const char *r5sim_reg_to_str(u32 reg);

@@ -34,6 +34,12 @@ static inline uint64_t sign_extend_64(uint64_t r, uint64_t sbit)
 	   __a < __b ? __a : __b; })
 
 /*
+ * Force the compiler to do this read.
+ */
+#define __VOL_READ(x)					\
+	({ volatile typeof(x) *__x = &x; *__x; })
+
+/*
  * Clear and then set a field to the passed value, __v.
  */
 #define	set_field(reg, __f, __v)			\
@@ -43,7 +49,7 @@ static inline uint64_t sign_extend_64(uint64_t r, uint64_t sbit)
 			((1u << (1u ? __f)) - 1u);	\
 							\
 		m ^= ((1u << (0u ? __f)) - 1u);		\
-		v &= m;					\
+		reg &= ~m;				\
 		reg |= v;				\
 	})
 

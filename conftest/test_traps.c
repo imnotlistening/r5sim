@@ -13,24 +13,31 @@
 
 #define VSYS_BASE	0x4000100
 
-static int ct_test_access_align(void *data)
-{
-	u32 something = 5, another = 2;
-	u32 *addr = &something;
-	char *addr_tmp;
-
-	addr_tmp = (char *)addr;
-	addr_tmp += 1;
-	addr = (u32 *)addr_tmp;
-
-	another = *addr;
-
-	return something != another;
-}
-
-static int ct_test_illegal_inst(void *data)
+int ct_test_access_align(void *data)
 {
 	u32 start, end;
+	volatile u32 value;
+	u32 target = 0x20000001;
+	volatile u32 *addr = (u32 *)target;
+
+	expect_exception = 1;
+
+	read_csr(CSR_CYCLE, start);
+	__asm__ volatile("lw	%1, 0(%0)\n\t"
+			 : "=r" (value)
+			 : "r" (addr));
+	read_csr(CSR_CYCLE, end);
+
+	(void) value;
+
+	return (end - start) > 62;
+}
+
+int ct_test_illegal_inst(void *data)
+{
+	u32 start, end;
+
+	expect_exception = 1;
 
 	read_csr(CSR_CYCLE, start);
 	asm volatile(".long 0x00000000\n\t");
@@ -39,9 +46,11 @@ static int ct_test_illegal_inst(void *data)
 	return (end - start) > 62;
 }
 
-static int ct_test_ecall(void *data)
+int ct_test_ecall(void *data)
 {
 	u32 start, end;
+
+	expect_exception = 1;
 
 	read_csr(CSR_CYCLE, start);
 	asm volatile("ecall\n\t");
@@ -50,7 +59,7 @@ static int ct_test_ecall(void *data)
 	return (end - start) > 62;
 }
 
-static int ct_test_timer_intr(void *data)
+int ct_test_timer_intr(void *data)
 {
 	u32 start, end;
 	u32 config = 0;
@@ -62,13 +71,13 @@ static int ct_test_timer_intr(void *data)
 		  VSYS_TIMER_CONFIG_ACTIVATE,
 		  VSYS_TIMER_CONFIG_ACTIVATE_TRIGGER);
 
-	read_csr(CSR_CYCLE, start);
-
 	/*
 	 * Configure and trigger the timer.
 	 */
 	writel(VSYS_BASE + VSYS_TIMER_INTERVAL, 10);
 	writel(VSYS_BASE + VSYS_TIMER_CONFIG,   config);
+
+	read_csr(CSR_CYCLE, start);
 
 	__asm__ volatile("wfi\n\t");
 
@@ -77,7 +86,7 @@ static int ct_test_timer_intr(void *data)
 	return (end - start) > 62;
 }
 
-static int ct_test_sw_intr(void *data)
+int ct_test_sw_intr(void *data)
 {
 	u32 start, end;
 
@@ -100,12 +109,97 @@ static int ct_test_sw_intr(void *data)
 	return (end - start) > 62;
 }
 
+/*
+ * Delegate all interrupts (just for testing) to s-mode; this means we
+ * should _not_ take these interrupts, even if pending, in M-mode.
+ */
+static int ct_test_deleg_intr(void *data)
+{
+	write_csr(CSR_MIDELEG, 0xffffffff);
+
+	return 1;
+}
+
+static int ct_test_deleg_done_intr(void *data)
+{
+	write_csr(CSR_MIDELEG, 0x0);
+
+	return 1;
+}
+
+int ct_test_sw_intr_deleg(void *data)
+{
+	u32 start, end;
+	u32 mip;
+
+	read_csr(CSR_CYCLE, start);
+
+	writel(VSYS_BASE + VSYS_M_SW_INTERRUPT, 1);
+
+	/*
+	 * This time, since the interrupt is delegated, we shouldn't get
+	 * interrupted. Thus the instruction could should be well under
+	 * 62.
+	 */
+	read_csr(CSR_CYCLE, end);
+
+	/*
+	 * Also, let's verify that MIP shows the timer interrupt present.
+	 */
+	read_csr(CSR_MIP, mip);
+
+	if (!get_field(mip, CSR_MIP_MSIP))
+		return 0;
+
+	clear_csr(CSR_MIP, mip);
+
+	return (end - start) < 10;
+}
+
+static int ct_test_timer_intr_deleg(void *data)
+{
+	u32 start, end;
+	u32 config = 0;
+	u32 mip;
+
+	set_field(config,
+		  VSYS_TIMER_CONFIG_PRECISION,
+		  VSYS_TIMER_CONFIG_PRECISION_MSECS);
+	set_field(config,
+		  VSYS_TIMER_CONFIG_ACTIVATE,
+		  VSYS_TIMER_CONFIG_ACTIVATE_TRIGGER);
+
+	/*
+	 * Configure and trigger the timer.
+	 */
+	writel(VSYS_BASE + VSYS_TIMER_INTERVAL, 10);
+	writel(VSYS_BASE + VSYS_TIMER_CONFIG,   config);
+
+	read_csr(CSR_CYCLE, start);
+
+	__asm__ volatile("wfi\n\t");
+
+	read_csr(CSR_CYCLE, end);
+
+	read_csr(CSR_MIP, mip);
+	if (!get_field(mip, CSR_MIP_MTIP))
+		return 0;
+
+	clear_csr(CSR_MIP, mip);
+
+	return (end - start) < 10;
+}
+
 static const struct ct_test op_traps[] = {
 	CT_TEST(ct_test_access_align,		NULL,			"access_align"),
 	CT_TEST(ct_test_illegal_inst,		NULL,			"illegal_inst"),
 	CT_TEST(ct_test_ecall,			NULL,			"ecall"),
 	CT_TEST(ct_test_sw_intr,		NULL,			"sw_intr"),
 	CT_TEST(ct_test_timer_intr,		NULL,			"timer_intr"),
+	CT_TEST(ct_test_deleg_intr,		NULL,			"deleg_intr"),
+	CT_TEST(ct_test_sw_intr_deleg,		NULL,			"sw_intr_deleg"),
+	CT_TEST(ct_test_timer_intr_deleg,	NULL,			"timer_intr_deleg"),
+	CT_TEST(ct_test_deleg_done_intr,	NULL,			"deleg_done_intr"),
 
 	/*
 	 * NULL terminate.

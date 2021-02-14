@@ -19,6 +19,11 @@
 		      :				\
 		      : "i" (csr), "r" (value))
 
+#define clear_csr(csr, value)			\
+	asm volatile ("csrc	%0, %1\n\t"	\
+		      :				\
+		      : "i" (csr), "r" (value))
+
 /*
  * Clear and then set a field to the passed value, __v.
  */
@@ -29,7 +34,7 @@
 			((1u << (1u ? __f)) - 1u);	\
 							\
 		m ^= ((1u << (0u ? __f)) - 1u);		\
-		v &= m;					\
+		reg &= ~m;				\
 		reg |= v;				\
 	})
 

@@ -5,6 +5,7 @@
 
 #include "conftest.h"
 #include "symbols.h"
+#include "csr.h"
 
 static ct_test_list_fn submodules[] = {
 	ct_env,
@@ -16,8 +17,27 @@ static ct_test_list_fn submodules[] = {
 	NULL
 };
 
-static void
-ct_run_test_submodule(ct_test_list_fn fn, u32 *pass, u32 *fail)
+static ct_test_list_fn submodules_sv[] = {
+	ct_sv_traps,
+	NULL
+};
+
+static void ct_jump_to_smode(void)
+{
+	u32 mstatus;
+
+	read_csr(CSR_MSTATUS, mstatus);
+	set_field(mstatus, CSR_MSTATUS_MPP, 0x1); /* S-Mode */
+
+	write_csr(CSR_MSTATUS, mstatus);
+	write_csr(CSR_MEPC,    (u32)&_smode_start);
+	write_csr(CSR_MIE,     0xaa);
+
+	__asm__("mret\n\t");
+}
+
+static void ct_run_test_submodule(ct_test_list_fn fn,
+				  u32 *pass, u32 *fail)
 {
 	const struct ct_test *tests;
 	int ret;
@@ -45,8 +65,9 @@ ct_run_test_submodule(ct_test_list_fn fn, u32 *pass, u32 *fail)
 /*
  * Compute a - b and store the result in dst.
  */
-void
-ct_time_diff(struct ct_time *dst, struct ct_time *a, struct ct_time *b)
+void ct_time_diff(struct ct_time *dst,
+		  struct ct_time *a,
+		  struct ct_time *b)
 {
 	dst->lo = a->lo - b->lo;
 	dst->hi = a->hi - b->hi;
@@ -62,8 +83,7 @@ void ct_ptime(struct ct_time *t, const char *str)
 	printf("%s {%u.%u}\n", str, t->hi, t->lo);
 }
 
-void
-start(void)
+void start(void)
 {
 	u32 pass_total = 0, pass;
 	u32 fail_total = 0, fail;
@@ -116,6 +136,41 @@ start(void)
 	printf("IPS:             %u\n",
 	       ((cycles_end - cycles_start) /
 		(diff.lo / 1000000)) * 1000);
+
+	printf("\n\nJumping to S-Mode\n");
+	ct_jump_to_smode();
+}
+
+/*
+ * We'll get here once we are executing in supervisor mode. We don't mess with
+ * memory prot stuff or anything so we are executing in the same physical
+ * address space as the previous M-Mode code.
+ *
+ * Use this for testing the M-Mode and S-Mode interactions, traps, interrupts,
+ * etc.
+ */
+void sv_start(void)
+{
+	u32 pass_total = 0, pass;
+	u32 fail_total = 0, fail;
+	ct_test_list_fn *submodule = submodules_sv;
+
+	printf("-- Executing Supervisor mode tests! --\n");
+
+	while (*submodule != NULL) {
+		ct_run_test_submodule(*submodule, &pass, &fail);
+
+		pass_total += pass;
+		fail_total += fail;
+
+		submodule++;
+	}
+
+	printf("\n\nTest results:\n");
+	printf("Passing tests: %u\n", pass_total);
+	printf("Failing tests: %u\n", fail_total);
+	printf("Total tests:   %u\n", pass_total + fail_total);
+	printf("\n\n");
 
 	while (1);
 }
