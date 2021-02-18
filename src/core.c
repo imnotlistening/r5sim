@@ -12,6 +12,7 @@
 #include <r5sim/core.h>
 #include <r5sim/trap.h>
 #include <r5sim/util.h>
+#include <r5sim/machine.h>
 
 /*
  * Check the medeleg register to see what priv level we should take
@@ -187,7 +188,7 @@ static void r5sim_core_pop_trap_s(struct r5sim_core *core)
 
 	set_field(core->mstatus, CSR_MSTATUS_SIE,  prev_ie);
 	set_field(core->mstatus, CSR_MSTATUS_SPIE, 1);
-	set_field(core->mstatus, CSR_MSTATUS_SPP,  RV_PRIV_M);
+	set_field(core->mstatus, CSR_MSTATUS_SPP,  RV_PRIV_U);
 
 	core->priv = prev_priv;
 	core->pc = csr_read(core, CSR_SEPC);
@@ -216,15 +217,15 @@ void r5sim_core_incr(struct r5sim_core *core)
  * When core->exec_one() returns non-zero, HALT the machine.
  */
 void r5sim_core_exec(struct r5sim_machine *mach,
-		     struct r5sim_core *core,
-		     u32 pc)
+		     struct r5sim_core *core)
 {
-	r5sim_dbg("EXEC @ 0x%08x (%x)\n", pc, core->priv);
-
-	core->pc = pc;
+	r5sim_dbg("EXEC @ 0x%08x (%x)\n", core->pc, core->priv);
 
 	while (1) {
 		int trap;
+
+		if (mach->debug)
+			return;
 
 		trap = core->exec_one(mach, core);
 

@@ -24,7 +24,7 @@ static void csr_mstatus_write(struct r5sim_core *core,
 	/*
 	 * We only support a few fields in MSTATUS at the moment.
 	 */
-	const u32 mstatus_mask = 0x19aa;
+	const u32 mstatus_mask = 0x1baa;
 
 	*value &= mstatus_mask;
 
@@ -334,8 +334,7 @@ void r5sim_core_default_csrs(struct r5sim_core *core)
  * This will return NULL if the CSR is not implemented. Otherwise it
  * returns the address of the CSR struct in the CSR file.
  */
-static struct r5sim_csr *__csr_always(struct r5sim_core *core,
-				      u32 rd, u32 csr)
+struct r5sim_csr *__csr_always(struct r5sim_core *core, u32 rd, u32 csr)
 {
 	struct r5sim_csr *csr_reg;
 
@@ -352,7 +351,7 @@ static struct r5sim_csr *__csr_always(struct r5sim_core *core,
 	if (get_field(csr, CSR_PRIV_FIELD) > core->priv)
 		return NULL;
 
-	if ((csr_reg->flags & CSR_F_READ) != 0 && rd != 0) {
+	if ((csr_reg->flags & CSR_F_READ) != 0) {
 		if (csr_reg->read_fn)
 			csr_reg->read_fn(core, csr_reg);
 		r5sim_dbg("CSR [R] %-15s v=0x%08x\n",

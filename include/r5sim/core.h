@@ -37,6 +37,7 @@ struct r5sim_core {
 	u32                   priv;
 #define RV_PRIV_M	      0x3
 #define RV_PRIV_S	      0x1
+#define RV_PRIV_U	      0x0
 
 	/*
 	 * Interrupt related fields for machine mode; currently this is
@@ -104,8 +105,7 @@ static inline u32 __get_reg(
 
 void r5sim_core_init_common(struct r5sim_core *core);
 void r5sim_core_exec(struct r5sim_machine *mach,
-		     struct r5sim_core *core,
-		     u32 pc);
+		     struct r5sim_core *core);
 void r5sim_core_describe(struct r5sim_core *core);
 
 void r5sim_core_incr(struct r5sim_core *core);

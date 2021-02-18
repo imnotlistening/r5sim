@@ -5,7 +5,7 @@
 #ifndef __R5SIM_CSR_H__
 #define __R5SIM_CSR_H__
 
-#include <stdint.h>
+#include <r5sim/env.h>
 
 #include <r5sim/hw/csr.h>
 
@@ -94,6 +94,12 @@ void __r5sim_core_add_csr(struct r5sim_core *core,
 			  struct r5sim_csr *csr_reg,
 			  u32 csr);
 void r5sim_core_default_csrs(struct r5sim_core *core);
+
+/*
+ * The CSR debug code uses this; it's a bit awkward. Don't use this
+ * unless you know what you are doing!
+ */
+struct r5sim_csr *__csr_always(struct r5sim_core *core, u32 rd, u32 csr);
 
 /* For use with get_field(). */
 #define CSR_PRIV_FIELD			9:8

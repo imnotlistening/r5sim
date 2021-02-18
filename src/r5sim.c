@@ -7,6 +7,7 @@
 
 #include <r5sim/log.h>
 #include <r5sim/app.h>
+#include <r5sim/hwdebug.h>
 #include <r5sim/machine.h>
 
 static struct r5sim_app_args app_args = { };
@@ -128,9 +129,11 @@ int main(int argc, char * const argv[])
 	mach = r5sim_machine_load_default();
 	r5sim_machine_print(mach);
 
+	r5sim_debug_init(mach);
+
 	r5sim_machine_load_brom(mach);
 
-	r5sim_machine_boot(mach);
+	r5sim_machine_run(mach);
 
 	return 0;
 }
