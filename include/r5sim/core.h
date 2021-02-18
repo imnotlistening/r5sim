@@ -104,8 +104,7 @@ static inline u32 __get_reg(
 
 void r5sim_core_init_common(struct r5sim_core *core);
 void r5sim_core_exec(struct r5sim_machine *mach,
-		     struct r5sim_core *core,
-		     u32 pc);
+		     struct r5sim_core *core);
 void r5sim_core_describe(struct r5sim_core *core);
 
 void r5sim_core_incr(struct r5sim_core *core);

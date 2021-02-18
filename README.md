@@ -13,8 +13,8 @@ simple-core implementation.
 To run this you'll need a GCC host compiler, a RISC-V cross compiler and
 GNU make. At least on Ubuntu these are easy enough to get:
 
-    $ sudo apt-get install gcc
-    $ sudo apt-get install gcc-riscv64-linux-gnu
+    $ sudo apt-get install gcc gcc-riscv64-linux-gnu
+    $ sudo apt-get install libreadline-dev
     $ sudo apt-get install make
 
 To build just a simple `make` should be sufficient. This will produce a few

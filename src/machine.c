@@ -403,15 +403,28 @@ void r5sim_machine_load_brom(struct r5sim_machine *mach)
 	close(brom_fd);
 }
 
-void r5sim_machine_boot(struct r5sim_machine *mach)
+void r5sim_machine_run(struct r5sim_machine *mach)
 {
+	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+	r5sim_info("Execution begins @ 0x%08x\n", mach->brom_base);
+
+	mach->core->pc = mach->brom_base;
+
 	/*
 	 * We assume that the brom has been loaded. The starting PC is address
 	 * 0x0 of the bootrom.
 	 */
-	r5sim_info("Execution begins @ 0x%08x\n", mach->brom_base);
-	r5sim_core_exec(mach, mach->core, mach->brom_base);
-	r5sim_core_describe(mach->core);
+	while (1) {
+		r5sim_core_exec(mach, mach->core);
+
+		mach->debug = 0;
+		r5sim_info("-- Waiting for debug session to end.\n");
+		pthread_mutex_lock(&lock);
+		pthread_cond_wait(&mach->debug_done, &lock);
+		pthread_mutex_unlock(&lock);
+		r5sim_info("-- Debug session done; execing\n");
+	}
 }
 
 void r5sim_machine_print(struct r5sim_machine *mach)

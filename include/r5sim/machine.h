@@ -5,6 +5,8 @@
 #ifndef __R5SIM_MACHINE__
 #define __R5SIM_MACHINE__
 
+#include <pthread.h>
+
 #include <r5sim/env.h>
 #include <r5sim/list.h>
 
@@ -23,6 +25,22 @@ struct r5sim_machine {
 	struct {
 		const char *name;
 	} descr;
+
+	/*
+	 * Each core should keep track of this field. If it flips to true then
+	 * they should stop executing and return. Execution will be started again
+	 * once the debug session exits.
+	 *
+	 * The main execution thread should set the signal_debug variable back to
+	 * false. When the debugger detects this, it'll know that the machine now
+	 * belongs to it.
+	 *
+	 * Once the debug session is done, the debugger should signal debug_done
+	 * so that the main thread can wake up.
+	 */
+	volatile int       debug;
+	pthread_cond_t     debug_done;
+	pthread_t          debug_thread;
 
 	struct r5sim_core *core;
 
@@ -97,7 +115,7 @@ void r5sim_machine_load_brom(struct r5sim_machine *mach);
 /*
  * Begin machine boot.
  */
-void r5sim_machine_boot(struct r5sim_machine *mach);
+void r5sim_machine_run(struct r5sim_machine *mach);
 
 /*
  * Display the details for a machine.

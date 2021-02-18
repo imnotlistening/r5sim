@@ -6,7 +6,7 @@
 .SUFFIXES:
 
 INCLUDES  = -I$(R5SIM_DIR)/include
-LIBS      = -lutil -lrt
+LIBS      = -lutil -lrt -lpthread -lreadline
 CFLAGS    += -ggdb -O2 -Wall
 
 OBJS      = r5sim.o \
@@ -19,7 +19,9 @@ OBJS      = r5sim.o \
             simple_core.o \
             vuart.o \
             vdisk.o \
-            vsys.o
+            vsys.o \
+            hwdebug.o \
+            session.o
 
 APP       = r5sim
 
