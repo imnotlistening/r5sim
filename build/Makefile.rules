@@ -1,64 +1,146 @@
 # -*- mode: makefile -*-
 # Some general rules that can be used for building C files, etc.
 #
+# Some variables that can be set in the config.mk:
+#
+# USE_SYMTABLE=1
+#
+#    Build a symbol table into the resulting binary. This won't be
+#    used for an application; applications are of course expected
+#    to run in a real hosted environment with GDB, etc, and thus
+#    this is unnecessary.
+#
+#
+
+.SECONDEXPANSION:
+.SUFFIXES:
+
+-include config.mk
 
 DEPDIR := .deps
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 
+# Export some environment variables for the sub-makefiles.
+export R5SIM_DIR INSTALL
+export CC CFLAGS INCLUDES LIBS
+export LD LDFLAGS OBJCOPY NM
+
+# Make sure that if there's a missing makefile it doesn't get LDed.
+%.mk:
+
+# Special target to group up all built objects in the current dir.
+dir_obj = $(notdir $(CURDIR)).o
+$(dir_obj): $$(_final_objs)
+	@echo "  [LD]\t\t$@"
+ifeq ($(USE_SYMTABLE),1)
+	$(VERBOSE)$(LD) $(LDFLAGS) -T $(@:.o=.lds) -r -o $@ $^
+else
+	$(VERBOSE)$(LD) $(LDFLAGS) -r -o $@ $^
+endif
+
 # Build C based object files.
 %.o : %.c $(DEPDIR)/%.d | $(DEPDIR)
 	@echo "  [CC]\t\t$@"
-	@$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+	$(VERBOSE)$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
 # Assemble object files.
 %.o : %.S $(DEPDIR)/%.d | $(DEPDIR)
 	@echo "  [AS]\t\t$@"
-	@$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -c -o $@ $<
-
-# Link an app using CC.
-% : %.c $(OBJS)
-	@echo "  [CC]\t\t$@"
-	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(VERBOSE)$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
 # Link binary blobs; for free standing things.
-%.bin : $(OBJS)
+ifeq ($(USE_SYMTABLE),1)
+% : %.lds $(dir_obj)
+# At this point we have the main dir_obj .o file; so generate some
+# symbols. Note that link #1 is the creation of dir_obj.
+	@echo "  [GEN]\t\t.symbols.S"
+	$(VERBOSE)$(NM) -n $(dir_obj) | grep '\( [tT] \)' | grep -v ' \.' | \
+		$(SCRIPTS)/syms.py > .symbols.S
+	@echo "  [AS]\t\t.symbols.o"
+	$(VERBOSE)$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -c -o .symbols.o .symbols.S
+
+# Now we have the .symbols.o file, so link #2: include the symbols.o.
+	@echo "  [LD]\t\t.tmp_$@"
+	$(VERBOSE)$(LD) $(LDFLAGS) -T $< -o .tmp_$@ $(dir_obj) .symbols.o
+
+# And generate the 2nd symbol table.
+	@echo "  [GEN]\t\tsymbols.S"
+	$(VERBOSE)$(NM) -n .tmp_$@ | grep '\( [tT] \)' | grep -v ' \.' | \
+		$(SCRIPTS)/syms.py > symbols.S
+	@echo "  [AS]\t\tsymbols.o"
+	$(VERBOSE)$(CC) $(DEPFLAGS) $(CFLAGS) $(INCLUDES) -c -o symbols.o symbols.S
+
+# Do the third link.
 	@echo "  [LD]\t\t$@"
-	@$(LD) $(LDFLAGS) -o $@ $(OBJS)
+	$(VERBOSE)$(LD) $(LDFLAGS) -T $< -o $@ $(dir_obj) symbols.o
+
+else
+% : %.lds $(dir_obj)
+	@echo "  [LDx]\t\t$@"
+	$(VERBOSE)$(LD) $(LDFLAGS) -T $< -o $@ $(dir_obj)
+endif
+
+# Link an app from the stuff we've built in this dir.
+%: %.o $(dir_obj)
+	@echo "  [LD]\t\t$@"
+	$(VERBOSE)$(CC) $(CFLAGS) -o $@ $(dir_obj) $(LIBS)
 
 # Installation target for applications. It's a trivial copy.
-install-app: $(APP)
-	@if [ x$(APP) != x ]; then \
+install-app:
+	$(VERBOSE)if [ x$(APP) != x ]; then \
 		echo "  [INSTALL]\t"$(APP) ; \
-		cp $(APP) $(INSTALL); \
+		cp $(APP) $(INSTALL_DIR); \
 	fi
-
-$(BIN): $(BIN).bin
-	@$(OBJCOPY) -O binary $(BIN).bin $(BIN)
 
 # Installation target for binaries; these go through objcopy
 # first.
 install-bin: $(BIN)
-	@if [ x$(BIN) != x ]; then \
+	$(VERBOSE)if [ x$(BIN) != x ]; then \
 		echo "  [INSTALL]\t"$(BIN) ; \
-		cp $(BIN) $(INSTALL)/$(BIN) ; \
+		$(OBJCOPY) -O binary $(BIN) $(INSTALL_DIR)/$(BIN) ; \
 	fi
 
+# Handle the OBJS input; we'll build .o files directly, we'll
+# sub-build for "objects" ending in '/'.
+
+subobj_name = $(1)$(patsubst %/,%,$(1)).o
+
+_objs       = $(filter %.o,$(OBJS))
+_dirs       = $(filter %/,$(OBJS))
+_dir_objs   = $(foreach dir,$(_dirs),$(call subobj_name,$(dir)))
+_final_objs = $(_objs) $(_dir_objs)
+
+submake-build:
+	@for d in $(_dirs); do					\
+		$(MAKE) --no-print-directory -C $$d build;	\
+	done
+
+submake-clean:
+	@for d in $(_dirs); do					\
+		$(MAKE) --no-print-directory -C $$d clean;	\
+	done
+
+build: submake-build $$(_objs) $(dir_obj) $$(APP) $$(BIN)
+	@echo >/dev/null
+
+.PHONY: install
 install: install-app install-bin
 
 # Clean target to wipe out all built files.
-clean:
-	@rm -rf $(OBJS) $(BIN) $(APP) $(BIN).bin .deps
-	@rm -rf $(EXTRA_CLEAN)
-
-all: $(APP) $(BIN)
-	@echo >/dev/null
-
-.PRECIOUS: $(OBJS)
+.PHONY: clean
+clean: submake-clean
+	$(VERBOSE)rm -rf *.o $(BIN) $(APP) $(BIN).bin .deps
+	$(VERBOSE)rm -rf $(EXTRA_CLEAN)
 
 $(DEPDIR):
-	@mkdir -p $@
+	$(VERBOSE)mkdir -p $@
 
-DEPFILES += $(OBJS:%.o=$(DEPDIR)/%.d)
+_dep_c  = $(wildcard *.c)
+_dep_S  = $(wildcard *.S)
+DEPFILES = $(_dep_c:%.c=$(DEPDIR)/%.d) $(_dep_S:%.S=$(DEPDIR)/%.d)
 $(DEPFILES):
 
-include $(wildcard $(DEPFILES))
+$(DEPDIR)/%.d:
+	@echo > /dev/null
+
+-include $(DEPFILES)

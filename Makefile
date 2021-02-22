@@ -2,38 +2,45 @@
 # Build the r5sim!
 #
 
-# Turn off suffix rules. They are deprecated.
-.SUFFIXES:
-
-# Default host CC and some basic CFLAGS.
-CC        = gcc
-LD        = ld
-CFLAGS    = -Wall -Werror
-
-R5SIM_DIR = $(PWD)
-
-# Install directory.
-INSTALL   = $(R5SIM_DIR)/bin
+R5SIM_DIR   = $(PWD)
+INSTALL_DIR = $(R5SIM_DIR)/bin
+SCRIPTS     = $(R5SIM_DIR)/scripts
 
 # Sub-directories to build.
-SUBDIRS   = src brom conftest
+SUBDIRS     = src brom conftest
+
+MAKEFILES   = $(R5SIM_DIR)/build/Makefile.defaults \
+              $(R5SIM_DIR)/build/Makefile.rules
+
+VERBOSE   = @
+ifeq ($(V),1)
+VERBOSE   =
+endif
 
 # Export some environment variables for the sub-makefiles.
-export CC CFLAGS R5SIM_DIR INSTALL
+export R5SIM_DIR INSTALL_DIR SCRIPTS MAKEFILES VERBOSE
 
-.PHONY: $(SUBDIRS) all clean install
+.PHONY: install build
 
-all: $(SUBDIRS)
+all: install
 
-$(INSTALL):
-	@mkdir -p $(INSTALL)
+build:
+	@for d in $(SUBDIRS); do				\
+		echo Building: $$d;				\
+		$(MAKE) --no-print-directory -C $$d build;	\
+	done
 
-$(SUBDIRS):  | $(INSTALL)
-	@+$(MAKE) --no-print-directory -C $@ all
-	@+$(MAKE) --no-print-directory -C $@ install
+install: build $(INSTALL_DIR)
+	@for d in $(SUBDIRS); do				\
+		echo Installing: $$d;				\
+		$(MAKE) --no-print-directory -C $$d install;	\
+	done
 
 clean:
 	@for d in $(SUBDIRS); do				\
 		echo Cleaning: $$d;				\
 		$(MAKE) --no-print-directory -C $$d clean;	\
 	done
+
+$(INSTALL_DIR):
+	@mkdir -p $(INSTALL_DIR)

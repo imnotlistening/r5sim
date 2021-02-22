@@ -2,11 +2,8 @@
 # Build the simulator proper.
 #
 
-# Turn off suffix rules. They are deprecated.
-.SUFFIXES:
-
-INCLUDES  = -I$(R5SIM_DIR)/include
-LIBS      = -lutil -lrt -lpthread -lreadline
+INCLUDES  += -I$(R5SIM_DIR)/include
+LIBS      += -lutil -lrt -lpthread -lreadline
 CFLAGS    += -ggdb -O2 -Wall
 
 OBJS      = r5sim.o \
@@ -19,11 +16,9 @@ OBJS      = r5sim.o \
             simple_core.o \
             vuart.o \
             vdisk.o \
-            vsys.o \
-            hwdebug.o \
-            session.o \
-            csr_dbg.o
+            vsys.o
+
+# Subdirectories.
+OBJS      += debugger/
 
 APP       = r5sim
-
-include $(R5SIM_DIR)/build/Makefile.rules
