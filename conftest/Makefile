@@ -11,12 +11,6 @@ OBJS      = entry.o \
             sys.o \
             backtrace.o \
             symtable.o \
-            test_env.o \
-            test_system.o \
-            test_ldst.o \
-            test_muldiv.o \
-            test_op.o \
-            test_traps.o \
-            test_supervisor_traps.o
+            tests/
 
 EXTRA_CLEAN = .conftest* .symbols* symbols.S
