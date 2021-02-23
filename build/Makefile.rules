@@ -15,27 +15,40 @@
 .SECONDEXPANSION:
 .SUFFIXES:
 
--include config.mk
-
 DEPDIR := .deps
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 
+# Handle the OBJS input; we'll build .o files directly, we'll
+# sub-build for "objects" ending in '/'.
+subobj_name = $(1)$(patsubst %/,%,$(1)).o
+
+_objs       = $(filter %.o,$(OBJS))
+_dirs       = $(filter %/,$(OBJS))
+_dir_objs   = $(foreach dir,$(_dirs),$(call subobj_name,$(dir)))
+_final_objs = $(_objs) $(_dir_objs)
+dir_obj     = $(notdir $(CURDIR)).o
+
+MAKE.R      = $(MAKE) -f $(R5SIM_DIR)/build/recurse.mk --no-print-directory
+
 # Export some environment variables for the sub-makefiles.
-export R5SIM_DIR INSTALL
 export CC CFLAGS INCLUDES LIBS
 export LD LDFLAGS OBJCOPY NM
 
-# Make sure that if there's a missing makefile it doesn't get LDed.
-%.mk:
+# Build sub-dir objects.
+.PHONY: $(_dirs)
+$(_dirs):
+	@$(MAKE.R) -C $@ build
+
+$(_dir_objs): $(_dirs)
+	@:
 
 # Special target to group up all built objects in the current dir.
-dir_obj = $(notdir $(CURDIR)).o
-$(dir_obj): $$(_final_objs)
+$(dir_obj): $(_objs) $(_dir_objs)
 	@echo "  [LD]\t\t$@"
 ifeq ($(USE_SYMTABLE),1)
-	$(VERBOSE)$(LD) $(LDFLAGS) -T $(@:.o=.lds) -r -o $@ $^
+	$(VERBOSE)$(LD) $(LDFLAGS) -T $(@:.o=.lds) -r -o $@ $(_final_objs)
 else
-	$(VERBOSE)$(LD) $(LDFLAGS) -r -o $@ $^
+	$(VERBOSE)$(LD) $(LDFLAGS) -r -o $@ $(_final_objs)
 endif
 
 # Build C based object files.
@@ -76,14 +89,30 @@ ifeq ($(USE_SYMTABLE),1)
 
 else
 % : %.lds $(dir_obj)
-	@echo "  [LDx]\t\t$@"
+	@echo "  [LD]\t\t$@"
 	$(VERBOSE)$(LD) $(LDFLAGS) -T $< -o $@ $(dir_obj)
 endif
 
 # Link an app from the stuff we've built in this dir.
-%: %.o $(dir_obj)
+$(APP): $(dir_obj)
 	@echo "  [LD]\t\t$@"
 	$(VERBOSE)$(CC) $(CFLAGS) -o $@ $(dir_obj) $(LIBS)
+
+.PHONY: info done
+info:
+	@echo Entering     $(notdir $(CURDIR))
+	@echo _objs:       $(_objs)
+	@echo _dirs:       $(_dirs)
+	@echo _dir_objs:   $(_dir_objs)
+	@echo _final_objs: $(_final_objs)
+	@echo dir_obj:     $(dir_obj)
+	@echo depfiles:    $(DEPFILES)
+
+done:
+	@echo Done $(notdir $(CURDIR))
+
+build: $(dir_obj) $(APP) $(BIN)
+	@:
 
 # Installation target for applications. It's a trivial copy.
 install-app:
@@ -94,37 +123,20 @@ install-app:
 
 # Installation target for binaries; these go through objcopy
 # first.
-install-bin: $(BIN)
+install-bin:
 	$(VERBOSE)if [ x$(BIN) != x ]; then \
 		echo "  [INSTALL]\t"$(BIN) ; \
 		$(OBJCOPY) -O binary $(BIN) $(INSTALL_DIR)/$(BIN) ; \
 	fi
 
-# Handle the OBJS input; we'll build .o files directly, we'll
-# sub-build for "objects" ending in '/'.
-
-subobj_name = $(1)$(patsubst %/,%,$(1)).o
-
-_objs       = $(filter %.o,$(OBJS))
-_dirs       = $(filter %/,$(OBJS))
-_dir_objs   = $(foreach dir,$(_dirs),$(call subobj_name,$(dir)))
-_final_objs = $(_objs) $(_dir_objs)
-
-submake-build:
-	@for d in $(_dirs); do					\
-		$(MAKE) --no-print-directory -C $$d build;	\
-	done
+.PHONY: install
+install: install-app install-bin
 
 submake-clean:
 	@for d in $(_dirs); do					\
-		$(MAKE) --no-print-directory -C $$d clean;	\
+		$(MAKE) --no-print-directory -C $$d 		\
+			-f $(R5SIM_DIR)/build/recurse.mk clean ; \
 	done
-
-build: submake-build $$(_objs) $(dir_obj) $$(APP) $$(BIN)
-	@echo >/dev/null
-
-.PHONY: install
-install: install-app install-bin
 
 # Clean target to wipe out all built files.
 .PHONY: clean
@@ -139,8 +151,5 @@ _dep_c  = $(wildcard *.c)
 _dep_S  = $(wildcard *.S)
 DEPFILES = $(_dep_c:%.c=$(DEPDIR)/%.d) $(_dep_S:%.S=$(DEPDIR)/%.d)
 $(DEPFILES):
-
-$(DEPDIR)/%.d:
-	@echo > /dev/null
 
 -include $(DEPFILES)
