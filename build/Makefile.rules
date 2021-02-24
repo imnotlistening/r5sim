@@ -98,19 +98,6 @@ $(APP): $(dir_obj)
 	@echo "  [LD]\t\t$@"
 	$(VERBOSE)$(CC) $(CFLAGS) -o $@ $(dir_obj) $(LIBS)
 
-.PHONY: info done
-info:
-	@echo Entering     $(notdir $(CURDIR))
-	@echo _objs:       $(_objs)
-	@echo _dirs:       $(_dirs)
-	@echo _dir_objs:   $(_dir_objs)
-	@echo _final_objs: $(_final_objs)
-	@echo dir_obj:     $(dir_obj)
-	@echo depfiles:    $(DEPFILES)
-
-done:
-	@echo Done $(notdir $(CURDIR))
-
 build: $(dir_obj) $(APP) $(BIN)
 	@:
 
@@ -141,7 +128,7 @@ submake-clean:
 # Clean target to wipe out all built files.
 .PHONY: clean
 clean: submake-clean
-	$(VERBOSE)rm -rf *.o $(BIN) $(APP) $(BIN).bin .deps
+	$(VERBOSE)rm -rf *.o $(BIN) $(APP) .deps
 	$(VERBOSE)rm -rf $(EXTRA_CLEAN)
 
 $(DEPDIR):
