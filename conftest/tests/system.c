@@ -2,7 +2,9 @@
  * Simple tests to make sure our environment is sane.
  */
 
-#include "conftest.h"
+#include <ct/time.h>
+#include <ct/tests.h>
+#include <ct/conftest.h>
 
 static int
 ct_test_rdcycle(void *data)

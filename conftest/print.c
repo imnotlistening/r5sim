@@ -6,8 +6,8 @@
 
 #include <r5sim/hw/vuart.h>
 
-#include "conftest.h"
-#include "types.h"
+#include <ct/conftest.h>
+#include <ct/types.h>
 
 /*
  * Base addresses for the default machine.

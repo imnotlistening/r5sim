@@ -4,9 +4,9 @@
 
 #include <r5sim/hw/vsys.h>
 
-#include "csr.h"
-#include "types.h"
-#include "conftest.h"
+#include <ct/csr.h>
+#include <ct/types.h>
+#include <ct/conftest.h>
 
 /*
  * Base addresses for the default machine.

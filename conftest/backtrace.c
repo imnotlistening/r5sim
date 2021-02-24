@@ -2,8 +2,8 @@
  * An attempt at building some backtracing code.
  */
 
-#include "conftest.h"
-#include "symbols.h"
+#include <ct/conftest.h>
+#include <ct/symbols.h>
 
 #define stack_pointer(sp)			\
 	asm volatile ("mv	%0, sp\n\t"	\

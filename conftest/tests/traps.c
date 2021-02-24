@@ -6,8 +6,9 @@
  * the trap to skip said instruction.
  */
 
-#include "csr.h"
-#include "conftest.h"
+#include <ct/csr.h>
+#include <ct/conftest.h>
+#include <ct/tests.h>
 
 #include <r5sim/hw/vsys.h>
 

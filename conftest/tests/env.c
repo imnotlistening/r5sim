@@ -2,7 +2,8 @@
  * Simple tests to make sure our environment is sane.
  */
 
-#include "conftest.h"
+#include <ct/conftest.h>
+#include <ct/tests.h>
 
 static int ct_test_u8(void *data)
 {

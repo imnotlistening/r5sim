@@ -2,8 +2,8 @@
  * Some routines to search and describe the auto-generated symbol table.
  */
 
-#include "symbols.h"
-#include "conftest.h"
+#include <ct/symbols.h>
+#include <ct/conftest.h>
 
 extern u32 __symtable;
 extern u32 __symtable_header;

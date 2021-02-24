@@ -116,8 +116,8 @@ ct_rdtime:
 .globl __trap_vector
 __trap_vector:
 	addi	sp,sp,-120
-	sw	ra,  0(sp)
-	sw	gp,  4(sp)
+	sw	t5,  0(sp)
+	sw	t6,  4(sp)
 	sw	tp,  8(sp)
 	sw	t0,  12(sp)
 	sw	t1,  16(sp)
@@ -144,8 +144,8 @@ __trap_vector:
 	sw	s11, 100(sp)
 	sw	t3,  104(sp)
 	sw	t4,  108(sp)
-	sw	t5,  112(sp)
-	sw	t6,  116(sp)
+	sw	s0,  112(sp)
+	sw	ra,  116(sp)
 
 	csrr	a0,0x341	/* CSR_MEPC */
 	csrr	a1,0x342	/* CSR_MCAUSE */
@@ -193,8 +193,8 @@ __trap_vector:
 	csrw	0x341,t0
 
 2:
-	lw	ra,  0(sp)
-	lw	gp,  4(sp)
+	lw	t5,  0(sp)
+	lw	t6,  4(sp)
 	lw	tp,  8(sp)
 	lw	t0,  12(sp)
 	lw	t1,  16(sp)
@@ -221,8 +221,8 @@ __trap_vector:
 	lw	s11, 100(sp)
 	lw	t3,  104(sp)
 	lw	t4,  108(sp)
-	lw	t5,  112(sp)
-	lw	t6,  116(sp)
+	lw	s0,  112(sp)
+	lw	ra,  116(sp)
 
 	addi	sp,sp,120
 	mret

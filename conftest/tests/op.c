@@ -5,7 +5,8 @@
  * just wouldn't run, period. But it's good for completeness.
  */
 
-#include "conftest.h"
+#include <ct/conftest.h>
+#include <ct/tests.h>
 
 test_op(add1, 2,		4,		6);
 test_op(add2, -2,		-4,		-6);

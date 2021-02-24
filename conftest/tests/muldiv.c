@@ -2,7 +2,8 @@
  * Simple tests to make sure that multiply and divide work.
  */
 
-#include "conftest.h"
+#include <ct/conftest.h>
+#include <ct/tests.h>
 
 test_op(mul1, 2,		4,		8);
 test_op(mul2, -2,		-4,		8);

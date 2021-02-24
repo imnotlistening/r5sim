@@ -2,14 +2,15 @@
  * Test for load and store instructions.
  */
 
-#include "conftest.h"
+#include <ct/conftest.h>
+#include <ct/tests.h>
 
 struct ct_chars_list {
 	char		a;
 	char		b;
 	char		c;
 	char		d;
-	u32	sum;
+	u32		sum;
 };
 
 static struct ct_chars_list test1 = {

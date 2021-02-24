@@ -4,7 +4,6 @@
 
 include $(R5SIM_DIR)/build/riscv-xc.mk
 
-INCLUDES  = -I$(R5SIM_DIR)/include
 BIN       = conftest
 OBJS      = entry.o \
             start.o \
@@ -13,9 +12,13 @@ OBJS      = entry.o \
             sys.o \
             backtrace.o \
             symtable.o \
+            testexec.o \
+            time.o \
             tests/
 
-EXTRA_CLEAN = .conftest* .symbols* symbols.S
+INCLUDES    += -I$(R5SIM_DIR)/include \
+               -I$(R5SIM_DIR)/conftest/include
+EXTRA_CLEAN += .conftest* .symbols* symbols.S
 
 #
 # When linking a final binary, build in a symbol table.
