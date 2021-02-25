@@ -344,12 +344,15 @@ static int exec_jal(struct r5sim_machine *mach,
 	u32 lr = core->pc + 4;
 	u32 offset;
 
-	__set_reg(core, inst->rd, lr);
-
 	offset = (inst->imm_20    << 20) |
 		 (inst->imm_19_12 << 12) |
 		 (inst->imm_11    << 11) |
 		 (inst->imm_10_1  << 1);
+
+	if (offset & 0x3)
+		return TRAP_INST_ADDR_MISALIGN;
+
+	__set_reg(core, inst->rd, lr);
 
 	core->pc += sign_extend(offset, 20);
 
@@ -365,12 +368,16 @@ static int exec_jalr(struct r5sim_machine *mach,
 {
 	const r5_inst_i *inst = (const r5_inst_i *)__inst;
 	u32 lr = core->pc + 4;
+	u32 target = (__get_reg(core, inst->rs1) +
+		      sign_extend(inst->imm_11_0, 11)) & ~0x1;
+
+	if (target & 0x3)
+		return TRAP_INST_ADDR_MISALIGN;
 
 	/* Set link register. */
 	__set_reg(core, inst->rd, lr);
 
-	core->pc = (__get_reg(core, inst->rs1) +
-		    sign_extend(inst->imm_11_0, 11)) & ~0x1;
+	core->pc = target;
 
 	r5sim_itrace("LR     %-3s [0x%08x] New PC=%08x # rs=%-3s imm=%x\n",
 		     r5sim_reg_to_str(inst->rd), lr,
@@ -427,6 +434,9 @@ static int exec_branch(struct r5sim_machine *mach,
 			 (inst->imm_11   << 11) |
 			 (inst->imm_10_5 << 5) |
 			 (inst->imm_4_1  << 1);
+
+		if (offset & 0x3)
+			return TRAP_INST_ADDR_MISALIGN;
 
 		core->pc += sign_extend(offset, 12);
 	} else {
@@ -659,11 +669,11 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 	int strap;
 
 	/*
-	 * Fix: should be returned by the control flow instructions, not
-	 * the actual instruction fetch.
+	 * the PC should always be 4 byte aligned since we check to make
+	 * sure this happens during control flow instructions. But just
+	 * double check.
 	 */
-	if (mach->memload32(mach, core->pc, &inst_mem))
-		return TRAP_INST_ADDR_MISALIGN;
+	r5sim_assert(mach->memload32(mach, core->pc, &inst_mem));
 
 	inst = (r5_inst *)(&inst_mem);
 	fam = simple_core_opcode_fam(inst);
