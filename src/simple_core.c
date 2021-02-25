@@ -673,7 +673,8 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 	 * sure this happens during control flow instructions. But just
 	 * double check.
 	 */
-	r5sim_assert(mach->memload32(mach, core->pc, &inst_mem));
+	if (mach->memload32(mach, core->pc, &inst_mem))
+		return TRAP_ILLEGAL_INST;
 
 	inst = (r5_inst *)(&inst_mem);
 	fam = simple_core_opcode_fam(inst);

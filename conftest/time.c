@@ -70,5 +70,6 @@ u32 ct_compute_perf(void)
 	printf("  IPS:             %u\n",
 	       ((cycles_end - cycles_start) /
 		(diff.lo / 1000000)) * 1000);
+
 	return d;
 }

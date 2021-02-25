@@ -50,13 +50,14 @@ void sv_start(void);
 void _smode_start(void);
 
 int  trap_setup(void);
-void trap_entrance(u32 trap_pc, u32 cause);
 void __trap_vector(void);
 void __trap_vector_sv(void);
 
-void trap_entrance_sv(u32 trap_pc, u32 cause);
+void trap_entrance(u32 trap_pc, u32 cause, u32 trap_fp);
+void trap_entrance_sv(u32 trap_pc, u32 cause, u32 trap_fp);
 
 void backtrace(void);
+void backtrace_addr(u32 pc, u32 fp);
 int  backtrace_test(void);
 
 /*

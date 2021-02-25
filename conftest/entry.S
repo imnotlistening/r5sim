@@ -149,6 +149,7 @@ __trap_vector:
 
 	csrr	a0,0x341	/* CSR_MEPC */
 	csrr	a1,0x342	/* CSR_MCAUSE */
+	mv	a2, s0
 	mv	s0, a1
 
 	la	t0, trap_entrance
@@ -291,6 +292,7 @@ __trap_vector_sv:
 
 	csrr	a0,0x141	/* CSR_SEPC */
 	csrr	a1,0x142	/* CSR_SCAUSE */
+	mv	a2, s0
 	mv	s0, a1
 
 	la	t0, trap_entrance_sv

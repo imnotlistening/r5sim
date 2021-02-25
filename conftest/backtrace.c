@@ -19,20 +19,12 @@ struct stackframe {
 	u32 ra;
 };
 
-/*
- * Print a backtrace for the calling function.
- */
-void backtrace(void)
+static inline void __backtrace(u32 fp)
 {
-	u32 fp, sp, ra, pc;
+	u32 pc;
 	u32 offset;
-	u32 i = 0;
 	struct stackframe *frame;
 	const char *symbol;
-
-	stack_pointer(&sp);
-	frame_pointer(&fp);
-	return_address(&ra);
 
 	while (1) {
 		/*
@@ -45,14 +37,40 @@ void backtrace(void)
 		}
 
 		frame = (struct stackframe *)fp - 1;
-		sp = fp;
 		fp = frame->fp;
 		pc = frame->ra;
 
 		symbol = addr2sym(pc, &offset);
 
-		printf("Frame %2u: 0x%08x %s()+0x%x\n", i++, pc, symbol, offset);
+		printf("Frame: 0x%08x %s()+0x%x\n", pc, symbol, offset);
 	}
+
+}
+
+void backtrace_addr(u32 pc, u32 fp)
+{
+	const char *symbol;
+	u32 offset;
+
+	/*
+	 * This could be cleaner, but print the current frame first then
+	 * call __backtrace() and get the rest of the frames.
+	 */
+	symbol = addr2sym(pc, &offset);
+	printf("Frame: 0x%08x %s()+0x%x\n", pc, symbol, offset);
+
+	__backtrace(fp);
+}
+
+/*
+ * Print a backtrace for the calling function.
+ */
+void backtrace(void)
+{
+	u32 fp;
+
+	frame_pointer(&fp);
+	__backtrace(fp);
 }
 
 int btt_function3(void)

@@ -95,13 +95,13 @@ void __unknown_intr(u32 trap_pc, u32 code)
 	printf("  Source PC: 0x%08x\n", trap_pc);
 	printf("  Code:      %u\n", code);
 
-	backtrace();
+	backtrace_addr(trap_pc, 0);
 
 	while (1)
 		;
 }
 
-void trap_entrance(u32 trap_pc, u32 code)
+void trap_entrance(u32 trap_pc, u32 code, u32 trap_fp)
 {
 	/*
 	 * ECall from S-Mode. Delegate all exceptions to S-Mode.
@@ -121,13 +121,13 @@ void trap_entrance(u32 trap_pc, u32 code)
 	printf("Exception @ 0x%08x\n", trap_pc);
 	printf("  Code: %u\n", code);
 
-	backtrace();
+	backtrace_addr(trap_pc, trap_fp);
 
 	while (1)
 		;
 }
 
-void trap_entrance_sv(u32 trap_pc, u32 code)
+void trap_entrance_sv(u32 trap_pc, u32 code, u32 trap_fp)
 {
 	s_excep_exec = 1;
 
@@ -139,7 +139,7 @@ void trap_entrance_sv(u32 trap_pc, u32 code)
 	printf("Exception @ 0x%08x\n", trap_pc);
 	printf("  Code: %u\n", code);
 
-	backtrace();
+	backtrace_addr(trap_pc, trap_fp);
 
 	while (1)
 		;
