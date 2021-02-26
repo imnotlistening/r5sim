@@ -124,6 +124,47 @@ static int comm_m(struct r5sim_machine *mach,
 }
 
 /*
+ * $ step [N]
+ */
+static int comm_step(struct r5sim_machine *mach,
+		     int argc, char *argv[])
+{
+	u32 n = 1;
+	char *end_ptr;
+
+	/*
+	 * If we have more than one argument, then we aren't called
+	 * correctly. Do nothing.
+	 */
+	if (argc > 2) {
+		printf("Usage:\n");
+		printf("  %s [PC-value]\n", argv[0]);
+		return -1;
+	}
+
+	/*
+	 * If there's an arg, then attempt to parse it.
+	 */
+	if (argc == 2) {
+		n = (u32)strtol(argv[1], &end_ptr, 0);
+		if (*end_ptr != 0) {
+			printf("Failed to convert '%s' to u32!\n", argv[1]);
+			return -1;
+		}
+	}
+
+	/*
+	 * Set mach->step and then execute n instructions. Step is needed
+	 * otherwise the core will do nothing.
+	 */
+	mach->step = 1;
+	r5sim_core_exec(mach, mach->core, n);
+	mach->step = 0;
+
+	return 0;
+}
+
+/*
  * $ run [PC-value]
  */
 static int comm_run(struct r5sim_machine *mach,
@@ -168,7 +209,8 @@ static struct r5sim_hwd_command commands[] = {
 	CMD("m",     comm_m,     "Dump memory"),
 	CMD("core",  comm_core,  "Dump core state"),
 	CMD("csr",   comm_csr,   "Control CSR registers"),
-	CMD("break", comm_break, "Set, clear, list HW breakpoints."),
+	CMD("break", comm_break, "Set, clear, list HW breakpoints"),
+	CMD("step",  comm_step,  "Execute N instructions"),
 
 	CMD(NULL,  NULL,     NULL)
 };

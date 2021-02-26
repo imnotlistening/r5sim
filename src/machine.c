@@ -415,7 +415,7 @@ void r5sim_machine_run(struct r5sim_machine *mach)
 	mach->core->pc = mach->brom_base;
 
 	while (1) {
-		r5sim_core_exec(mach, mach->core);
+		r5sim_core_exec(mach, mach->core, 0);
 		r5sim_debug_do_session(mach);
 	}
 }

@@ -45,6 +45,7 @@ struct r5sim_machine {
 	 * so that the main thread can wake up.
 	 */
 	volatile int       debug;
+	volatile int       step;
 
 	struct r5sim_core *core;
 

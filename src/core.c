@@ -218,14 +218,17 @@ void r5sim_core_incr(struct r5sim_core *core)
  * When core->exec_one() returns non-zero, HALT the machine.
  */
 void r5sim_core_exec(struct r5sim_machine *mach,
-		     struct r5sim_core *core)
+		     struct r5sim_core *core,
+		     u32 nr)
 {
+	u32 done = 0;
+
 	r5sim_dbg("EXEC @ 0x%08x (%x)\n", core->pc, core->priv);
 
 	while (1) {
 		int trap;
 
-		if (mach->debug)
+		if (mach->debug && !mach->step)
 			return;
 
 		trap = core->exec_one(mach, core);
@@ -238,7 +241,7 @@ void r5sim_core_exec(struct r5sim_machine *mach,
 		 * Interrupts supercede exceptions. So we do this first.
 		 */
 		if (r5sim_core_handle_intr(core))
-			continue;
+			goto inst_done;
 
 		/*
 		 * No interrupt so handle possible exceptions; here we
@@ -247,15 +250,15 @@ void r5sim_core_exec(struct r5sim_machine *mach,
 		switch (trap) {
 		case TRAP_ALL_GOOD:
 			r5sim_core_incr(core);
-			continue;
+			goto inst_done;
 		case TRAP_MRET:
 			r5sim_core_incr(core);
 			r5sim_core_pop_trap_m(core);
-			continue;
+			goto inst_done;
 		case TRAP_SRET:
 			r5sim_core_incr(core);
 			r5sim_core_pop_trap_s(core);
-			continue;
+			goto inst_done;
 		case TRAP_BREAK_POINT:
 			kill(getpid(), SIGTSTP);
 			/*
@@ -264,6 +267,10 @@ void r5sim_core_exec(struct r5sim_machine *mach,
 			 * may end up executing a few extra instructions
 			 * before the debugger wakes up and sets mach->debug
 			 * to true.
+			 *
+			 * It's possible we hit a break point while already
+			 * in debug mode (e.g stepping). That should be
+			 * perfectly fine.
 			 */
 			while (!mach->debug)
 				;
@@ -280,11 +287,21 @@ void r5sim_core_exec(struct r5sim_machine *mach,
 			 */
 			if (core->priv == RV_PRIV_M &&
 			    ((1 << trap) & core->medeleg))
-				continue;
+				goto inst_done;
 
 			/* Otherwise we can take this trap. */
 			r5sim_core_push_exception(core, (u32)trap);
 		}
+
+	inst_done:
+		done += 1;
+
+		/*
+		 * If the debugger asks us to run nr instructions, return when
+		 * we hit that number.
+		 */
+		if (nr && done >= nr)
+			return;
 	}
 }
 
