@@ -6,7 +6,7 @@
 #ifndef __R5SIM_HWDEBUG_H__
 #define __R5SIM_HWDEBUG_H__
 
-struct r5sim_machine;
+#include <r5sim/machine.h>
 
 typedef int (*r5sim_comm_func)(struct r5sim_machine *mach,
 			       int argc, char **argv);
@@ -24,6 +24,19 @@ struct r5sim_hwd_command {
 		.help = __help,			\
 	}
 
+static inline int r5sim_hwbreak(struct r5sim_machine *mach, u32 pc)
+{
+	u32 i;
+	int do_break = 0;
+
+	if (!mach->breaks_set)
+		return 0;
+
+	for (i = 0; i < BREAKPOINT_NR; i++)
+		do_break += (mach->hwbreaks[i] == pc);
+
+	return do_break;
+}
 
 /*
  * Commands should retern COMM_OK or 0 for success and less than 0 for an
@@ -40,5 +53,6 @@ void r5sim_debug_do_session(struct r5sim_machine *mach);
  * Commands to do debugging!
  */
 int comm_csr(struct r5sim_machine *mach, int argc, char *argv[]);
+int comm_break(struct r5sim_machine *mach, int argc, char *argv[]);
 
 #endif

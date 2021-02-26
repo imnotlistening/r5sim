@@ -113,8 +113,6 @@ static int parse_csr_opts(struct r5sim_machine *mach,
 	int c, opt_index;
 	char *ok;
 
-	optind = 1;
-
 	while (1) {
 		c = getopt_long(argc, argv,
 				csr_opts_str, csr_opts, &opt_index);
@@ -123,6 +121,9 @@ static int parse_csr_opts(struct r5sim_machine *mach,
 			break;
 
 		switch (c) {
+		case 'h':
+			/* TODO... */
+			break;
 		case 'w':
 			args->value_w = (u32)strtol(optarg, &ok, 0);
 			if (*ok != 0) {

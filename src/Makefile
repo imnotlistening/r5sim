@@ -4,7 +4,7 @@
 
 INCLUDES  += -I$(R5SIM_DIR)/include
 LIBS      += -lutil -lrt -lpthread -lreadline
-CFLAGS    += -ggdb -O2 -Wall
+CFLAGS    += -ggdb -O2 -Wall -rdynamic
 
 OBJS      = r5sim.o \
 	    iodev.o \

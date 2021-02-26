@@ -17,6 +17,7 @@
 #include <r5sim/vdevs.h>
 #include <r5sim/iodev.h>
 #include <r5sim/machine.h>
+#include <r5sim/hwdebug.h>
 #include <r5sim/simple_core.h>
 
 /*
@@ -405,23 +406,17 @@ void r5sim_machine_load_brom(struct r5sim_machine *mach)
 
 void r5sim_machine_run(struct r5sim_machine *mach)
 {
-	pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-
 	r5sim_info("Execution begins @ 0x%08x\n", mach->brom_base);
-
-	mach->core->pc = mach->brom_base;
 
 	/*
 	 * We assume that the brom has been loaded. The starting PC is address
 	 * 0x0 of the bootrom.
 	 */
+	mach->core->pc = mach->brom_base;
+
 	while (1) {
 		r5sim_core_exec(mach, mach->core);
-
-		mach->debug = 0;
-		pthread_mutex_lock(&lock);
-		pthread_cond_wait(&mach->debug_done, &lock);
-		pthread_mutex_unlock(&lock);
+		r5sim_debug_do_session(mach);
 	}
 }
 

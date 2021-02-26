@@ -16,6 +16,7 @@
 #include <r5sim/trap.h>
 #include <r5sim/util.h>
 #include <r5sim/machine.h>
+#include <r5sim/hwdebug.h>
 #include <r5sim/simple_core.h>
 
 static int exec_misc_mem(struct r5sim_machine *mach,
@@ -520,8 +521,7 @@ static int exec_system(struct r5sim_machine *mach,
 			/*
 			 * No debug support yet; just die.
 			 */
-			r5sim_info("Sim bug: no debug support.\n");
-			r5sim_assert(0);
+			ret = TRAP_BREAK_POINT;
 			break;
 		case 0x2:   /* URET */
 			ret = TRAP_ILLEGAL_INST;
@@ -667,6 +667,9 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 	u32 op_type;
 	r5_inst *inst;
 	int strap;
+
+	if (r5sim_hwbreak(mach, core->pc))
+		return TRAP_BREAK_POINT;
 
 	/*
 	 * the PC should always be 4 byte aligned since we check to make

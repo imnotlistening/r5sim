@@ -17,6 +17,12 @@ struct r5sim_core;
 #define ML_ACCESS_FAULT	-3
 
 /*
+ * Define a limited number of breakpoints. _each_ instruction has to check
+ * against this list, so it's expensive to have too many.
+ */
+#define BREAKPOINT_NR		4
+
+/*
  * Define a "machine". This is a single core - for now - and some memory.
  * Define several function pointers for accessing memory, device memory,
  * etc.
@@ -39,8 +45,6 @@ struct r5sim_machine {
 	 * so that the main thread can wake up.
 	 */
 	volatile int       debug;
-	pthread_cond_t     debug_done;
-	pthread_t          debug_thread;
 
 	struct r5sim_core *core;
 
@@ -57,6 +61,16 @@ struct r5sim_machine {
 
 	u32    iomem_base;
 	u32    iomem_size;
+
+	/*
+	 * HW breakpoints. Each core checks these when loading an instruction
+	 * to determine if it should break.
+	 *
+	 * If any break points are set, then breaks_set is 1. This provies a
+	 * short circuit for the general case where no breakpoints are set.
+	 */
+	u32    hwbreaks[BREAKPOINT_NR];
+	int    breaks_set;
 
 	/*
 	 * Load and store - will direct the loads and stores to either DRAM

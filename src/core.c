@@ -2,9 +2,10 @@
  * Basic CPU core interfaces.
  */
 
-#include <stdlib.h>
-
 #include <time.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <signal.h>
 
 #include <r5sim/log.h>
 #include <r5sim/env.h>
@@ -255,6 +256,18 @@ void r5sim_core_exec(struct r5sim_machine *mach,
 			r5sim_core_incr(core);
 			r5sim_core_pop_trap_s(core);
 			continue;
+		case TRAP_BREAK_POINT:
+			kill(getpid(), SIGTSTP);
+			/*
+			 * Make sure that debug is really set; then we'll
+			 * continue and finally return. If we don't wait we
+			 * may end up executing a few extra instructions
+			 * before the debugger wakes up and sets mach->debug
+			 * to true.
+			 */
+			while (!mach->debug)
+				;
+			return;
 		default:
 			/*
 			 * An actual exception.
@@ -459,9 +472,11 @@ const char *r5sim_system_func3_to_str(u32 func3, u32 csr)
 		case 0x0:   /* ECALL */
 			return "ECALL";
 		case 0x1:   /* EBREAK */
-		case 0x2:   /* URET */
-		case 0x102: /* SRET */
+			return "EBREAK";
+		case 0x2:   /* URET - not supported quite yet. */
 			return "ERR";
+		case 0x102: /* SRET */
+			return "SRET";
 		case 0x302: /* MRET */
 			return "MRET";
 		case 0x105: /* WFI */

@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
 
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -162,11 +163,12 @@ static int comm_run(struct r5sim_machine *mach,
 }
 
 static struct r5sim_hwd_command commands[] = {
-	CMD("help", comm_help, "Display available commands"),
-	CMD("run",  comm_run,  "Run the simulator"),
-	CMD("m",    comm_m,    "Dump memory"),
-	CMD("core", comm_core, "Dump core state"),
-	CMD("csr",  comm_csr,  "Control CSR registers"),
+	CMD("help",  comm_help,  "Display available commands"),
+	CMD("run",   comm_run,   "Run the simulator"),
+	CMD("m",     comm_m,     "Dump memory"),
+	CMD("core",  comm_core,  "Dump core state"),
+	CMD("csr",   comm_csr,   "Control CSR registers"),
+	CMD("break", comm_break, "Set, clear, list HW breakpoints."),
 
 	CMD(NULL,  NULL,     NULL)
 };
@@ -205,8 +207,6 @@ static int process_line(struct r5sim_machine *mach, char *line)
 	int comm_argc;
 	int i, ret = 0;
 
-	// r5sim_info("Processing command: '%s'\n", line);
-
 	if (!*line)
 		return 0;
 
@@ -242,6 +242,8 @@ static int process_line(struct r5sim_machine *mach, char *line)
 		goto done;
 	}
 
+	optind = 0;
+
 	/*
 	 * And finally execute it.
 	 */
@@ -249,7 +251,6 @@ static int process_line(struct r5sim_machine *mach, char *line)
 
 done:
 	free(comm_argv);
-	// printf("Done line!\n");
 	return ret;
 }
 
@@ -304,6 +305,5 @@ void r5sim_debug_do_session(struct r5sim_machine *mach)
 	}
 
 	mach->core->priv = saved_priv;
-
-	return;
+	mach->debug = 0;
 }
