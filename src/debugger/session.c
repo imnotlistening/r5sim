@@ -64,6 +64,53 @@ static int comm_core(struct r5sim_machine *mach,
 }
 
 /*
+ * $ set <reg> <val>
+ *
+ * Set <reg> to the value <val>. Reg should be in the form x[1-31]
+ * (x0 is hardwired to 0).
+ */
+static int comm_set(struct r5sim_machine *mach,
+		    int argc, char *argv[])
+{
+	u32 r, v;
+	char *rstr;
+	char *end_ptr;
+
+	if (argc != 3) {
+		printf("Usage:\n");
+		printf("  %s <reg> <val>\n", argv[0]);
+		return -1;
+	}
+
+	rstr = argv[1];
+	if (*rstr != 'x') {
+		printf("Register not recognized: %s\n", rstr);
+		return -1;
+	}
+
+	r = strtol(rstr + 1, &end_ptr, 0);
+	if (*end_ptr != 0) {
+		printf("Failed to convert '%s' to register!\n", argv[1]);
+		return -1;
+	}
+
+	v = strtol(argv[2], &end_ptr, 0);
+	if (*end_ptr != 0) {
+		printf("Failed to convert '%s' to u32!\n", argv[2]);
+		return -1;
+	}
+
+	if (r < 1 || r > 31) {
+		printf("Invalid register: %s\n", argv[1]);
+		return -1;
+	}
+
+	__set_reg(mach->core, r, v);
+
+	return 0;
+}
+
+/*
  * $ m <address> [length]
  *
  * Display memory at the requested address for the length bytes.
@@ -211,6 +258,7 @@ static struct r5sim_hwd_command commands[] = {
 	CMD("csr",   comm_csr,   "Control CSR registers"),
 	CMD("break", comm_break, "Set, clear, list HW breakpoints"),
 	CMD("step",  comm_step,  "Execute N instructions"),
+	CMD("set",   comm_set,   "Execute N instructions"),
 
 	CMD(NULL,  NULL,     NULL)
 };
@@ -262,7 +310,7 @@ static int process_line(struct r5sim_machine *mach, char *line)
 	i = 1;
 	comm_argv[0] = strtok(line, " ");
 
-	while (1) {
+	while (i < comm_argc) {
 		comm_argv[i] = strtok(NULL, " ");
 		if (!comm_argv[i])
 			break;
