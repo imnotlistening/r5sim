@@ -5,13 +5,35 @@
 #ifndef __R5SIM_ENV_H__
 #define __R5SIM_ENV_H__
 
+#include <stdio.h>
 #include <assert.h>
 #include <stdint.h>
+#include <execinfo.h>
 
-/*
- * This may expand in the future.
- */
-#define r5sim_assert(cond)	 assert(cond)
+static inline void __r5sim_backtrace(void)
+{
+	int frames, i;
+	char **symbols;
+	void *functions[32];
+
+	printf("Ahh! Crash! Backtrace:\n");
+
+	frames = backtrace((void **)functions, 32);
+	symbols = backtrace_symbols((void **)functions, frames);
+
+	for (i = 0; i < frames; i++)
+		printf("  #%-2d %s()\n", i, symbols[i]);
+}
+
+#define r5sim_assert(cond)				\
+	do {						\
+		if (!(cond)) {				\
+			__r5sim_backtrace();		\
+							\
+			/* Actually assert now. */	\
+			assert(cond);			\
+		}					\
+	} while (0)
 
 /*
  * Convenience macros for sizes.
