@@ -10,6 +10,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+#include <r5sim/app.h>
 #include <r5sim/log.h>
 #include <r5sim/core.h>
 #include <r5sim/hwdebug.h>
@@ -212,6 +213,63 @@ static int comm_step(struct r5sim_machine *mach,
 }
 
 /*
+ * $ verbose [level]
+ */
+static int comm_verbose(struct r5sim_machine *mach,
+			int argc, char *argv[])
+{
+	struct r5sim_app_args *app_args;
+	char *end_ptr;
+	u32 v;
+
+	if (argc >= 3) {
+		printf("Usage:\n\n");
+		printf("  $ verbose [level]\n\n");
+		return -1;
+	}
+
+	app_args = r5sim_app_get_args();
+
+	if (argc == 1) {
+		printf("Verbosity level: %d\n", app_args->verbose);
+		return 0;
+	}
+
+	/* argc == 2; try and set a verbosity level. */
+	v = (u32)strtol(argv[1], &end_ptr, 0);
+	if (*end_ptr != 0) {
+		printf("Failed to convert '%s' to u32!\n", argv[1]);
+		return -1;
+	}
+
+	app_args->verbose = v;
+	return 0;
+}
+
+/*
+ * $ trace
+ */
+static int comm_trace(struct r5sim_machine *mach,
+		      int argc, char *argv[])
+{
+	struct r5sim_app_args *app_args;
+
+	if (argc != 1) {
+		printf("Usage:\n\n");
+		printf("  $ trace\n\n");
+		return -1;
+	}
+
+	app_args = r5sim_app_get_args();
+
+	app_args->itrace = !app_args->itrace;
+
+	printf("Tracing %s!\n", app_args->itrace ? "enabled" : "disabled");
+
+	return 0;
+}
+
+/*
  * $ run [PC-value]
  */
 static int comm_run(struct r5sim_machine *mach,
@@ -251,14 +309,16 @@ static int comm_run(struct r5sim_machine *mach,
 }
 
 static struct r5sim_hwd_command commands[] = {
-	CMD("help",  comm_help,  "Display available commands"),
-	CMD("run",   comm_run,   "Run the simulator"),
-	CMD("m",     comm_m,     "Dump memory"),
-	CMD("core",  comm_core,  "Dump core state"),
-	CMD("csr",   comm_csr,   "Control CSR registers"),
-	CMD("break", comm_break, "Set, clear, list HW breakpoints"),
-	CMD("step",  comm_step,  "Execute N instructions"),
-	CMD("set",   comm_set,   "Execute N instructions"),
+	CMD("help",    comm_help,    "Display available commands"),
+	CMD("run",     comm_run,     "Run the simulator"),
+	CMD("m",       comm_m,       "Dump memory"),
+	CMD("core",    comm_core,    "Dump core state"),
+	CMD("csr",     comm_csr,     "Control CSR registers"),
+	CMD("break",   comm_break,   "Set, clear, list HW breakpoints"),
+	CMD("step",    comm_step,    "Execute N instructions"),
+	CMD("set",     comm_set,     "Execute N instructions"),
+	CMD("verbose", comm_verbose, "Set verbosity level"),
+	CMD("trace",   comm_trace,   "Toggle instruction tracing"),
 
 	CMD(NULL,  NULL,     NULL)
 };
