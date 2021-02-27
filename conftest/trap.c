@@ -91,6 +91,8 @@ void intr_timer_sv(u32 trap_pc, u32 code)
 
 void __unknown_intr(u32 trap_pc, u32 code)
 {
+	printf("\n");
+	printf("--- !! ---!\n");
 	printf("Unknown interrupt:\n");
 	printf("  Source PC: 0x%08x\n", trap_pc);
 	printf("  Code:      %u\n", code);
@@ -118,6 +120,8 @@ void trap_entrance(u32 trap_pc, u32 code, u32 trap_fp)
 		return;
 	}
 
+	printf("\n");
+	printf("--- !! ---\n");
 	printf("Exception @ 0x%08x\n", trap_pc);
 	printf("  Code: %u\n", code);
 
@@ -136,6 +140,8 @@ void trap_entrance_sv(u32 trap_pc, u32 code, u32 trap_fp)
 		return;
 	}
 
+	printf("\n");
+	printf("--- !! ---\n");
 	printf("Exception @ 0x%08x\n", trap_pc);
 	printf("  Code: %u\n", code);
 

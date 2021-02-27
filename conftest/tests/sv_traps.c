@@ -7,6 +7,7 @@
 #include <ct/csr.h>
 #include <ct/conftest.h>
 #include <ct/tests.h>
+#include <ct/trap_tests.h>
 
 #include <r5sim/hw/vsys.h>
 
@@ -183,29 +184,30 @@ static int ct_test_sv_sw_intr(void *data)
 	return (end - start) > 62;
 }
 
-int ct_test_access_align(void *data);
-int ct_test_illegal_inst(void *data);
-int ct_test_ecall(void *data);
-int ct_test_timer_intr(void *data);
-int ct_test_sw_intr(void *data);
-
 static const struct ct_test op_sv_traps[] = {
 	/*
 	 * Rerun the M-mode interrupt tests; they should just work.
 	 */
-	CT_TEST(ct_test_access_align,		NULL,			"access_align"),
-	CT_TEST(ct_test_illegal_inst,		NULL,			"illegal_inst"),
-	CT_TEST(ct_test_ecall,			NULL,			"ecall"),
-	CT_TEST(ct_test_sw_intr,		NULL,			"sw_intr"),
-	CT_TEST(ct_test_timer_intr,		NULL,			"timer_intr"),
+	CT_TEST(ct_test_exception,		&ld_align,	"ld_align"),
+	CT_TEST(ct_test_exception,		&ld_fault,	"ld_fault"),
+	CT_TEST(ct_test_exception,		&st_align,	"st_align"),
+	CT_TEST(ct_test_exception,		&st_fault,	"st_fault"),
+	CT_TEST(ct_test_exception,		&inst_align,	"inst_align"),
+	CT_TEST(ct_test_exception,		&illegal_inst,	"illegal_inst"),
+	CT_TEST(ct_test_exception,		&ecall,		"ecall"),
 
-	CT_TEST(ct_test_sv_trap_init,		NULL,			"init"),
+	CT_TEST(ct_test_sw_intr,		NULL,		"sw_intr"),
+	CT_TEST(ct_test_timer_intr,		NULL,		"timer_intr"),
 
-	CT_TEST(ct_test_sv_access_align,	NULL,			"access_align_sv"),
-	CT_TEST(ct_test_sv_illegal_inst,	NULL,			"illegal_inst_sv"),
-	CT_TEST(ct_test_sv_ecall,		NULL,			"ecall_sv"),
-	CT_TEST(ct_test_sv_sw_intr,		NULL,			"sw_intr_sv"),
-	CT_TEST(ct_test_sv_timer_intr,		NULL,			"timer_intr_sv"),
+	/*
+	 * And now the supervisor specific tests.
+	 */
+	CT_TEST(ct_test_sv_trap_init,		NULL,		"init"),
+	CT_TEST(ct_test_sv_access_align,	NULL,		"access_align_sv"),
+	CT_TEST(ct_test_sv_illegal_inst,	NULL,		"illegal_inst_sv"),
+	CT_TEST(ct_test_sv_ecall,		NULL,		"ecall_sv"),
+	CT_TEST(ct_test_sv_sw_intr,		NULL,		"sw_intr_sv"),
+	CT_TEST(ct_test_sv_timer_intr,		NULL,		"timer_intr_sv"),
 
 	/*
 	 * NULL terminate.

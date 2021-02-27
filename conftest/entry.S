@@ -159,7 +159,7 @@ __trap_vector:
 	 * already present in t0. Otherwise we'll update t0 to
 	 * point to the correct interrupt handler.
 	 */
-	bgtz	a1, 1f
+	bgez	a1, 1f
 
 	/* Firstly, clear the sign bit in mcause */
 	li	t2, 0x7fffffff

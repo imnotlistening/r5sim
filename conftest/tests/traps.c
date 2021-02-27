@@ -9,56 +9,112 @@
 #include <ct/csr.h>
 #include <ct/conftest.h>
 #include <ct/tests.h>
+#include <ct/trap_tests.h>
 
 #include <r5sim/hw/vsys.h>
 
 #define VSYS_BASE	0x4000100
 
-int ct_test_access_align(void *data)
+void ct_test_ld_align(void)
 {
-	u32 start, end;
-	volatile u32 value;
+	u32 value;
 	u32 target = 0x20000001;
-	volatile u32 *addr = (u32 *)target;
 
-	expect_exception = 1;
-
-	read_csr(CSR_CYCLE, start);
 	__asm__ volatile("lw	%1, 0(%0)\n\t"
 			 : "=r" (value)
-			 : "r" (addr));
-	read_csr(CSR_CYCLE, end);
+			 : "r" (target));
 
 	(void) value;
-
-	return (end - start) > 62;
 }
 
-int ct_test_illegal_inst(void *data)
+void ct_test_st_align(void)
 {
-	u32 start, end;
+	u32 value = 0xff00ff00;
+	u32 target = 0x20000001;
 
-	expect_exception = 1;
+	__asm__ volatile("sw	%1, 0(%0)\n\t"
+			 : "=r" (value)
+			 : "r" (target));
 
-	read_csr(CSR_CYCLE, start);
+	(void) value;
+}
+
+void ct_test_inst_align(void)
+{
+	u32 target = 0x20000003;
+
+	__asm__ volatile("jalr	%0\n\t"
+			 :
+			 : "r" (target));
+}
+
+void ct_test_ld_fault(void)
+{
+	u32 value;
+	u32 target = 0x4;
+
+	__asm__ volatile("lw	%1, 0(%0)\n\t"
+			 : "=r" (value)
+			 : "r" (target));
+
+	(void) value;
+}
+
+void ct_test_st_fault(void)
+{
+	u32 value = 0xff00ff00;
+	u32 target = 0x4;
+
+	__asm__ volatile("sw	%1, 0(%0)\n\t"
+			 : "=r" (value)
+			 : "r" (target));
+
+	(void) value;
+}
+
+void ct_test_illegal_inst(void)
+{
 	asm volatile(".long 0x00000000\n\t");
-	read_csr(CSR_CYCLE, end);
-
-	return (end - start) > 62;
 }
 
-int ct_test_ecall(void *data)
+
+void ct_test_ecall(void)
+{
+	asm volatile("ecall\n\t");
+}
+
+int ct_test_exception(void *__test)
 {
 	u32 start, end;
+	struct ct_excep_test *test = __test;
 
+	/*
+	 * Work with the trap API: set this variable to tell the
+	 * trap code this next trap is expected.
+	 */
 	expect_exception = 1;
 
+	/*
+	 * Read the CYCLE csr so that we can verify that a trap
+	 * actually happened.
+	 *
+	 * This relies on fault_func executing only a few instructions
+	 * at most.
+	 */
 	read_csr(CSR_CYCLE, start);
-	asm volatile("ecall\n\t");
+	test->fault_func();
 	read_csr(CSR_CYCLE, end);
 
 	return (end - start) > 62;
 }
+
+struct ct_excep_test ld_align     = { ct_test_ld_align };
+struct ct_excep_test st_align     = { ct_test_st_align };
+struct ct_excep_test inst_align   = { ct_test_inst_align };
+struct ct_excep_test ld_fault     = { ct_test_ld_fault };
+struct ct_excep_test st_fault     = { ct_test_st_fault };
+struct ct_excep_test illegal_inst = { ct_test_illegal_inst };
+struct ct_excep_test ecall        = { ct_test_ecall };
 
 int ct_test_timer_intr(void *data)
 {
@@ -192,15 +248,23 @@ static int ct_test_timer_intr_deleg(void *data)
 }
 
 static const struct ct_test op_traps[] = {
-	CT_TEST(ct_test_access_align,		NULL,			"access_align"),
-	CT_TEST(ct_test_illegal_inst,		NULL,			"illegal_inst"),
-	CT_TEST(ct_test_ecall,			NULL,			"ecall"),
-	CT_TEST(ct_test_sw_intr,		NULL,			"sw_intr"),
-	CT_TEST(ct_test_timer_intr,		NULL,			"timer_intr"),
-	CT_TEST(ct_test_deleg_intr,		NULL,			"deleg_intr"),
-	CT_TEST(ct_test_sw_intr_deleg,		NULL,			"sw_intr_deleg"),
-	CT_TEST(ct_test_timer_intr_deleg,	NULL,			"timer_intr_deleg"),
-	CT_TEST(ct_test_deleg_done_intr,	NULL,			"deleg_done_intr"),
+	/*
+	 * CPU exceptions.
+	 */
+	CT_TEST(ct_test_exception,		&ld_align,	"ld_align"),
+	CT_TEST(ct_test_exception,		&ld_fault,	"ld_fault"),
+	CT_TEST(ct_test_exception,		&st_align,	"st_align"),
+	CT_TEST(ct_test_exception,		&st_fault,	"st_fault"),
+	CT_TEST(ct_test_exception,		&inst_align,	"inst_align"),
+	CT_TEST(ct_test_exception,		&illegal_inst,	"illegal_inst"),
+	CT_TEST(ct_test_exception,		&ecall,		"ecall"),
+
+	CT_TEST(ct_test_sw_intr,		NULL,		"sw_intr"),
+	CT_TEST(ct_test_timer_intr,		NULL,		"timer_intr"),
+	CT_TEST(ct_test_deleg_intr,		NULL,		"deleg_intr"),
+	CT_TEST(ct_test_sw_intr_deleg,		NULL,		"sw_intr_deleg"),
+	CT_TEST(ct_test_timer_intr_deleg,	NULL,		"timer_intr_deleg"),
+	CT_TEST(ct_test_deleg_done_intr,	NULL,		"deleg_done_intr"),
 
 	/*
 	 * NULL terminate.
