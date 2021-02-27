@@ -28,7 +28,7 @@ static int exec_misc_mem(struct r5sim_machine *mach,
 	/*
 	 * For the simple core these fence operations are just no-ops.
 	 */
-	return 0;
+	return TRAP_ALL_GOOD;
 }
 
 static int exec_load(struct r5sim_machine *mach,
@@ -136,7 +136,7 @@ static int exec_load(struct r5sim_machine *mach,
 		     r5sim_reg_to_str(inst->rs1),
 		     r5sim_reg_to_str(inst->rd));
 
-	return 0;
+	return TRAP_ALL_GOOD;
 }
 
 static int exec_store(struct r5sim_machine *mach,
@@ -208,7 +208,7 @@ static int exec_store(struct r5sim_machine *mach,
 		     r5sim_reg_to_str(inst->rs1),
 		     r5sim_reg_to_str(inst->rs2));
 
-	return 0;
+	return TRAP_ALL_GOOD;
 }
 
 static int exec_op_imm(struct r5sim_machine *mach,
@@ -269,7 +269,7 @@ static int exec_op_imm(struct r5sim_machine *mach,
 		     r5sim_reg_to_str(inst->rd),
 		     r5sim_reg_to_str(inst->rs1),
 		     imm);
-	return 0;
+	return TRAP_ALL_GOOD;
 }
 
 static int exec_op_i(struct r5sim_machine *mach,
@@ -342,7 +342,7 @@ static int exec_op_i(struct r5sim_machine *mach,
 		     r5sim_reg_to_str(inst->rs1),
 		     r5sim_reg_to_str(inst->rs2));
 
-	return 0;
+	return TRAP_ALL_GOOD;
 }
 
 static int exec_op_m(struct r5sim_machine *mach,
@@ -404,7 +404,7 @@ static int exec_op_m(struct r5sim_machine *mach,
 		     r5sim_reg_to_str(inst->rs1),
 		     r5sim_reg_to_str(inst->rs2));
 
-	return 0;
+	return TRAP_ALL_GOOD;
 }
 
 static int exec_op(struct r5sim_machine *mach,
@@ -442,7 +442,7 @@ static int exec_jal(struct r5sim_machine *mach,
 	r5sim_itrace("LR     %-3s [0x%08x] New PC=0x%08x # imm=0x%x\n",
 		     r5sim_reg_to_str(inst->rd), lr, core->pc, offset);
 
-	return 0;
+	return TRAP_ALL_GOOD;
 }
 
 static int exec_jalr(struct r5sim_machine *mach,
@@ -468,7 +468,7 @@ static int exec_jalr(struct r5sim_machine *mach,
 		     r5sim_reg_to_str(inst->rs1),
 		     sign_extend(inst->imm_11_0, 11) & ~0x1);
 
-	return 0;
+	return TRAP_ALL_GOOD;
 }
 
 static int exec_branch(struct r5sim_machine *mach,
@@ -534,7 +534,7 @@ static int exec_branch(struct r5sim_machine *mach,
 		     take_branch ? "TAKE" : "SKIP",
 		     offset);
 
-	return 0;
+	return TRAP_ALL_GOOD;
 }
 
 static int exec_auipc(struct r5sim_machine *mach,
@@ -552,7 +552,7 @@ static int exec_auipc(struct r5sim_machine *mach,
 		     core->pc,
 		     (*inst_u32 & 0xfffff000));
 
-	return 0;
+	return TRAP_ALL_GOOD;
 }
 
 static int exec_lui(struct r5sim_machine *mach,
@@ -568,7 +568,7 @@ static int exec_lui(struct r5sim_machine *mach,
 		     r5sim_reg_to_str(inst->rd),
 		     *inst_u32 & 0xfffff000);
 
-	return 0;
+	return TRAP_ALL_GOOD;
 }
 
 static int exec_system(struct r5sim_machine *mach,
@@ -577,7 +577,7 @@ static int exec_system(struct r5sim_machine *mach,
 {
 	const r5_inst_i *inst = (const r5_inst_i *)__inst;
 	const u32 csr = inst->imm_11_0;
-	int ret = 0;
+	int ret = TRAP_ALL_GOOD;
 
 	switch (inst->func3) {
 	case 0x0: /* ECALL/EBREAK/etc. */
@@ -788,8 +788,10 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 	}
 
 	strap = fam->op_exec(mach, core, inst);
-	if (strap)
+	if (strap != TRAP_ALL_GOOD) {
+		r5sim_itrace("Exception! [%d]\n", strap);
 		return strap;
+	}
 
 	if (fam->incr_pc)
 		core->pc += 4;
