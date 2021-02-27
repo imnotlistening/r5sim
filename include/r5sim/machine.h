@@ -18,6 +18,10 @@ struct r5sim_core;
  */
 #define BREAKPOINT_NR		4
 
+#define MACH_ACCESS_OK		 0
+#define MACH_ACCESS_MISALIGN	-1
+#define MACH_ACCESS_FAULT	-2
+
 /*
  * Define a "machine". This is a single core - for now - and some memory.
  * Define several function pointers for accessing memory, device memory,
