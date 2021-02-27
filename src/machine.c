@@ -14,6 +14,7 @@
 #include <r5sim/list.h>
 #include <r5sim/core.h>
 #include <r5sim/util.h>
+#include <r5sim/trap.h>
 #include <r5sim/vdevs.h>
 #include <r5sim/iodev.h>
 #include <r5sim/machine.h>
@@ -66,8 +67,8 @@ static void __write_byte(u8 *mem, u32 paddr,
 /*
  * IO memory is always accessed at 4 byte boundaries.
  */
-static u32 r5sim_default_io_memload(struct r5sim_machine *mach,
-				    u32 paddr)
+static int r5sim_default_io_memload(struct r5sim_machine *mach,
+				    u32 paddr, u32 *dest)
 {
 	struct r5sim_iodev *dev;
 	u32 io_paddr = paddr - mach->iomem_base;
@@ -76,21 +77,22 @@ static u32 r5sim_default_io_memload(struct r5sim_machine *mach,
 	 * Loop through the devices and find a device to access.
 	 */
 	list_for_each_entry(dev, &mach->io_devs, mach_node) {
-		if (addr_in(dev->io_offset,
-			    dev->io_size,
-			    io_paddr))
-			return dev->readl(dev, io_paddr - dev->io_offset);
+		if (!addr_in(dev->io_offset,
+			     dev->io_size,
+			     io_paddr))
+			continue;
+
+		*dest = dev->readl(dev, io_paddr - dev->io_offset);
+		return 0;
 	}
 
 	/*
 	 * No device found!
 	 */
-	r5sim_warn("Load to non-existent IO addr: 0x%08x\n", paddr);
-
-	return 0x0;
+	return TRAP_PLAT_NXIO_ADDR_LD;
 }
 
-static void r5sim_default_io_memstore(struct r5sim_machine *mach,
+static int r5sim_default_io_memstore(struct r5sim_machine *mach,
 				     u32 paddr,
 				     u32 value)
 {
@@ -101,18 +103,19 @@ static void r5sim_default_io_memstore(struct r5sim_machine *mach,
 	 * Loop through the devices and find a device to access.
 	 */
 	list_for_each_entry(dev, &mach->io_devs, mach_node) {
-		if (addr_in(dev->io_offset,
-			    dev->io_size,
-			    io_paddr)) {
-			dev->writel(dev, io_paddr - dev->io_offset, value);
-			return;
-		}
+		if (!addr_in(dev->io_offset,
+			     dev->io_size,
+			     io_paddr))
+			continue;
+
+		dev->writel(dev, io_paddr - dev->io_offset, value);
+		return 0;
 	}
 
 	/*
 	 * No device found!
 	 */
-	r5sim_warn("Store to non-existent IO addr: 0x%08x\n", paddr);
+	return TRAP_PLAT_NXIO_ADDR_ST;
 }
 
 static int r5sim_default_memload32(struct r5sim_machine *mach,
@@ -123,7 +126,7 @@ static int r5sim_default_memload32(struct r5sim_machine *mach,
 	 * Check alignment; we don't support unaligned loads.
 	 */
 	if (paddr & 0x3)
-		return ML_ALIGN_FAULT;
+		return TRAP_ST_ADDR_MISALIGN;
 
 	/*
 	 * DRAM access and BROM access is easy.
@@ -141,12 +144,9 @@ static int r5sim_default_memload32(struct r5sim_machine *mach,
 	else if (addr_in(mach->iomem_base,
 			 mach->iomem_size,
 			 paddr))
-		*dest = r5sim_default_io_memload(mach, paddr);
-	else {
-		r5sim_core_describe(mach->core);
-		r5sim_err("Invalid load address: 0x%x\n", paddr);
-		r5sim_assert(!"Invalid LOAD address!");
-	}
+		return r5sim_default_io_memload(mach, paddr, dest);
+	else
+		return TRAP_PLAT_ILLEGAL_PADDR_ST;
 
 	return 0;
 }
@@ -156,7 +156,7 @@ static int r5sim_default_memload16(struct r5sim_machine *mach,
 				   u16 *dest)
 {
 	if (paddr & 0x1)
-		return ML_ALIGN_FAULT;
+		return TRAP_ST_ADDR_MISALIGN;
 
 	/* Don't allow non-word aligned IO accesses! */
 	if (addr_in(mach->memory_base,
@@ -169,11 +169,8 @@ static int r5sim_default_memload16(struct r5sim_machine *mach,
 			 paddr))
 		*dest = __load_half((u16 *)mach->brom,
 				    paddr, mach->brom_base);
-	else {
-		r5sim_core_describe(mach->core);
-		r5sim_err("16b access to IO aperture: 0x%x\n", paddr);
-		r5sim_assert(!"Invalid LOAD address!");
-	}
+	else
+		return TRAP_PLAT_ILLEGAL_PADDR_ST;
 
 	return 0;
 }
@@ -193,11 +190,8 @@ static int r5sim_default_memload8(struct r5sim_machine *mach,
 			 paddr))
 		*dest = __load_byte(mach->brom,
 				    paddr, mach->brom_base);
-	else {
-		r5sim_core_describe(mach->core);
-		r5sim_err("8b access to invalid aperture: 0x%x\n", paddr);
-		r5sim_assert(!"Invalid LOAD address!");
-	}
+	else
+		return TRAP_PLAT_ILLEGAL_PADDR_ST;
 
 	return 0;
 }
@@ -207,7 +201,7 @@ static int r5sim_default_memstore32(struct r5sim_machine *mach,
 				    u32 value)
 {
 	if (paddr & 0x3)
-		return ML_ALIGN_FAULT;
+		return TRAP_ST_ADDR_MISALIGN;
 
 	/*
 	 * No stores to BROM!
@@ -220,12 +214,9 @@ static int r5sim_default_memstore32(struct r5sim_machine *mach,
 	else if (addr_in(mach->iomem_base,
 			 mach->iomem_size,
 			 paddr))
-		r5sim_default_io_memstore(mach, paddr, value);
-	else {
-		r5sim_core_describe(mach->core);
-		r5sim_err("Invalid store address: 0x%x\n", paddr);
-		r5sim_assert(!"Invalid STORE address!");
-	}
+		return r5sim_default_io_memstore(mach, paddr, value);
+	else
+		return TRAP_PLAT_ILLEGAL_PADDR_ST;
 
 	return 0;
 }
@@ -235,21 +226,18 @@ static int r5sim_default_memstore16(struct r5sim_machine *mach,
 				    u16 value)
 {
 	if (paddr & 0x1)
-		return ML_ALIGN_FAULT;
+		return TRAP_ST_ADDR_MISALIGN;
 
 	/*
 	 * No stores to BROM or to IO mem when not word aligned.
 	 */
 	if (addr_in(mach->memory_base,
 		    mach->memory_size,
-		    paddr)) {
+		    paddr))
 		__write_half((u16 *)mach->memory, paddr,
 			     mach->memory_base, value);
-	} else {
-		r5sim_core_describe(mach->core);
-		r5sim_err("Invalid store address: 0x%x\n", paddr);
-		r5sim_assert(!"Invalid STORE address!");
-	}
+	else
+		return TRAP_PLAT_ILLEGAL_PADDR_ST;
 
 	return 0;
 }
@@ -263,14 +251,11 @@ static int r5sim_default_memstore8(struct r5sim_machine *mach,
 	 */
 	if (addr_in(mach->memory_base,
 		    mach->memory_size,
-		    paddr)) {
+		    paddr))
 		__write_byte(mach->memory, paddr,
 			     mach->memory_base, value);
-	} else {
-		r5sim_core_describe(mach->core);
-		r5sim_err("Invalid store address: 0x%x\n", paddr);
-		r5sim_assert(!"Invalid STORE address!");
-	}
+	else
+		return TRAP_PLAT_ILLEGAL_PADDR_ST;
 
 	return 0;
 }

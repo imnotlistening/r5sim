@@ -9,7 +9,7 @@
 #define TRAP_INST_ACCESS_FAULT		1  /* Instruction access fault */
 #define TRAP_ILLEGAL_INST		2  /* Illegal instruction */
 #define TRAP_BREAK_POINT		3  /* Breakpoint */
-#define TRAP_LD_ADDR_MISLAIGN		4  /* Load address misaligned */
+#define TRAP_LD_ADDR_MISALIGN		4  /* Load address misaligned */
 #define TRAP_LD_ACCESS_FAULT		5  /* Load access fault */
 #define TRAP_ST_ADDR_MISALIGN		6  /* Store/AMO address misaligned */
 #define TRAP_ST_ACCESS_FAULT		7  /* Store/AMO access fault */
@@ -21,6 +21,14 @@
 #define TRAP_LD_PAGE_FAULT		13 /* Load page fault */
 #define TRAP_RESERVED_14		14 /* Reserved for future standard use */
 #define TRAP_ST_PAGE_FAULT		15 /* Store/AMO page fault */
+
+/*
+ * Extensions added by r5sim.
+ */
+#define TRAP_PLAT_ILLEGAL_PADDR_ST	16 /* Illegal platform store address */
+#define TRAP_PLAT_ILLEGAL_PADDR_LD	17 /* Illegal platform load address */
+#define TRAP_PLAT_NXIO_ADDR_LD		18 /* NXIO load address */
+#define TRAP_PLAT_NXIO_ADDR_ST		19 /* NXIO store address */
 
 /*
  * Since [0, 15] are real exceptions, we need something else to convey

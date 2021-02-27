@@ -38,6 +38,7 @@ static int exec_load(struct r5sim_machine *mach,
 	const r5_inst_i *inst = (const r5_inst_i *)__inst;
 	u32 paddr_src;
 	u32 w = 0;
+	int err;
 
 	paddr_src = core->reg_file[inst->rs1] +
 		sign_extend(inst->imm_11_0, 11);
@@ -48,30 +49,35 @@ static int exec_load(struct r5sim_machine *mach,
 	switch (inst->func3) {
 	case 0x0: /* LB */
 		/* Since there's no MMU this can't really trap... */
-		if (mach->memload8(mach, paddr_src, (u8 *)(&w)))
-			return TRAP_LD_ADDR_MISLAIGN;
+		err = mach->memload8(mach, paddr_src, (u8 *)(&w));
+		if (err)
+			return err;
 		w = sign_extend(w, 7);
 		__set_reg(core, inst->rd, w);
 		break;
 	case 0x1: /* LH */
-		if (mach->memload16(mach, paddr_src, (u16 *)(&w)))
-			return TRAP_LD_ADDR_MISLAIGN;
+		err = mach->memload16(mach, paddr_src, (u16 *)(&w));
+		if (err)
+			return err;
 		w = sign_extend(w, 15);
 		__set_reg(core, inst->rd, w);
 		break;
 	case 0x2: /* LW */
-		if (mach->memload32(mach, paddr_src, &w))
-			return TRAP_LD_ADDR_MISLAIGN;
+		err = mach->memload32(mach, paddr_src, &w);
+		if (err)
+			return err;
 		__set_reg(core, inst->rd, w);
 		break;
 	case 0x4: /* LBU */
-		if (mach->memload8(mach, paddr_src, (u8 *)(&w)))
-			return TRAP_LD_ADDR_MISLAIGN;
+		err = mach->memload8(mach, paddr_src, (u8 *)(&w));
+		if (err)
+			return err;
 		__set_reg(core, inst->rd, w);
 		break;
 	case 0x5: /* LHU */
-		if (mach->memload16(mach, paddr_src, (u16 *)(&w)))
-			return TRAP_LD_ADDR_MISLAIGN;
+		err = mach->memload16(mach, paddr_src, (u16 *)(&w));
+		if (err)
+			return err;
 		__set_reg(core, inst->rd, w);
 		break;
 	default:
@@ -95,25 +101,29 @@ static int exec_store(struct r5sim_machine *mach,
 	const r5_inst_s *inst = (const r5_inst_s *)__inst;
 	u32 imm;
 	u32 paddr_dst;
+	int err;
 
 	imm = sign_extend((inst->imm_11_5 << 5) | inst->imm_4_0, 11);
 	paddr_dst = __get_reg(core, inst->rs1) + imm;
 
 	switch (inst->func3) {
 	case 0x0: /* SB */
-		if (mach->memstore8(mach, paddr_dst,
-				    (u8)core->reg_file[inst->rs2]))
-			return TRAP_LD_ADDR_MISLAIGN;
+		err = mach->memstore8(mach, paddr_dst,
+				      (u8)core->reg_file[inst->rs2]);
+		if (err)
+			return err;
 		break;
 	case 0x1: /* SH */
-		if (mach->memstore16(mach, paddr_dst,
-				     (u16)core->reg_file[inst->rs2]))
-		    return TRAP_LD_ADDR_MISLAIGN;
+		err = mach->memstore16(mach, paddr_dst,
+				       (u16)core->reg_file[inst->rs2]);
+		if (err)
+			return err;
 		break;
 	case 0x2: /* SW */
-		if (mach->memstore32(mach, paddr_dst,
-				     core->reg_file[inst->rs2]))
-			return TRAP_LD_ADDR_MISLAIGN;
+		err = mach->memstore32(mach, paddr_dst,
+				       core->reg_file[inst->rs2]);
+		if (err)
+			return err;
 		break;
 	default:
 		return TRAP_ILLEGAL_INST;
@@ -667,6 +677,7 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 	u32 op_type;
 	r5_inst *inst;
 	int strap;
+	int err;
 
 	if (r5sim_hwbreak(mach, core->pc))
 		return TRAP_BREAK_POINT;
@@ -676,8 +687,9 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 	 * sure this happens during control flow instructions. But just
 	 * double check.
 	 */
-	if (mach->memload32(mach, core->pc, &inst_mem))
-		return TRAP_ILLEGAL_INST;
+	err = mach->memload32(mach, core->pc, &inst_mem);
+	if (err)
+		return err;
 
 	inst = (r5_inst *)(&inst_mem);
 	fam = simple_core_opcode_fam(inst);

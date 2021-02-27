@@ -12,10 +12,6 @@
 
 struct r5sim_core;
 
-#define ML_ALIGN_FAULT	-1
-#define ML_PAGE_FAULT	-2
-#define ML_ACCESS_FAULT	-3
-
 /*
  * Define a limited number of breakpoints. _each_ instruction has to check
  * against this list, so it's expensive to have too many.
