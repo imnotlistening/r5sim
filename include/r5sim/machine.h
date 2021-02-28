@@ -18,9 +18,14 @@ struct r5sim_core;
  */
 #define BREAKPOINT_NR		4
 
-#define MACH_ACCESS_OK		 0
-#define MACH_ACCESS_MISALIGN	-1
-#define MACH_ACCESS_FAULT	-2
+/*
+ * Memory access results. These mean nothing to the code running on a
+ * simulator. They need to be translated to relevant TRAPs before passing
+ * to the sim.
+ */
+#define __ACCESS_OK		 0
+#define __ACCESS_MISALIGN	-1
+#define __ACCESS_FAULT		-2
 
 /*
  * Define a "machine". This is a single core - for now - and some memory.

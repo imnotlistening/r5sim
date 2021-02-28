@@ -35,6 +35,12 @@ static inline uint64_t sign_extend_64(uint64_t r, uint64_t sbit)
 	   __typeof__ (b) __b = (b);		\
 	   __a < __b ? __a : __b; })
 
+#define container_of(ptr, type, member)					\
+	({								\
+		const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
+		(type *)( (char *)__mptr - offsetof(type,member) );	\
+	})
+
 /*
  * Force the compiler to do this read.
  */

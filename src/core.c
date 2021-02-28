@@ -315,6 +315,12 @@ void r5sim_core_init_common(struct r5sim_core *core)
 	 * Start off in M-mode.
 	 */
 	core->priv = RV_PRIV_M;
+
+	/*
+	 * Default MMU implementation; has a PMP and will eventually have
+	 * an page table.
+	 */
+	r5sim_mmu_use_default(core);
 }
 
 void r5sim_core_describe(struct r5sim_core *core)

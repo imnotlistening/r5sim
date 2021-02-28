@@ -314,6 +314,7 @@ static struct r5sim_hwd_command commands[] = {
 	CMD("m",       comm_m,       "Dump memory"),
 	CMD("core",    comm_core,    "Dump core state"),
 	CMD("csr",     comm_csr,     "Control CSR registers"),
+	CMD("pmp",     comm_pmp,     "Print active PMPs"),
 	CMD("break",   comm_break,   "Set, clear, list HW breakpoints"),
 	CMD("step",    comm_step,    "Execute N instructions"),
 	CMD("set",     comm_set,     "Set a register to a value"),

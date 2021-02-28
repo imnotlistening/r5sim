@@ -49,13 +49,13 @@ static int exec_load(struct r5sim_machine *mach,
 	switch (inst->func3) {
 	case 0x0: /* LB */
 		/* Since there's no MMU this can't really trap... */
-		err = mach->memload8(mach, paddr_src, (u8 *)(&w));
+		err = core->mmu.load8(&core->mmu, paddr_src, (u8 *)(&w));
 		switch (err) {
-		case MACH_ACCESS_MISALIGN:
+		case __ACCESS_MISALIGN:
 			return TRAP_LD_ADDR_MISALIGN;
-		case MACH_ACCESS_FAULT:
+		case __ACCESS_FAULT:
 			return TRAP_LD_ACCESS_FAULT;
-		case MACH_ACCESS_OK:
+		case __ACCESS_OK:
 			break;
 		default:
 			r5sim_assert(!"Invalid memload return!");
@@ -65,13 +65,13 @@ static int exec_load(struct r5sim_machine *mach,
 		__set_reg(core, inst->rd, w);
 		break;
 	case 0x1: /* LH */
-		err = mach->memload16(mach, paddr_src, (u16 *)(&w));
+		err = core->mmu.load16(&core->mmu, paddr_src, (u16 *)(&w));
 		switch (err) {
-		case MACH_ACCESS_MISALIGN:
+		case __ACCESS_MISALIGN:
 			return TRAP_LD_ADDR_MISALIGN;
-		case MACH_ACCESS_FAULT:
+		case __ACCESS_FAULT:
 			return TRAP_LD_ACCESS_FAULT;
-		case MACH_ACCESS_OK:
+		case __ACCESS_OK:
 			break;
 		default:
 			r5sim_assert(!"Invalid memload return!");
@@ -81,13 +81,13 @@ static int exec_load(struct r5sim_machine *mach,
 		__set_reg(core, inst->rd, w);
 		break;
 	case 0x2: /* LW */
-		err = mach->memload32(mach, paddr_src, &w);
+		err = core->mmu.load32(&core->mmu, paddr_src, &w);
 		switch (err) {
-		case MACH_ACCESS_MISALIGN:
+		case __ACCESS_MISALIGN:
 			return TRAP_LD_ADDR_MISALIGN;
-		case MACH_ACCESS_FAULT:
+		case __ACCESS_FAULT:
 			return TRAP_LD_ACCESS_FAULT;
-		case MACH_ACCESS_OK:
+		case __ACCESS_OK:
 			break;
 		default:
 			r5sim_assert(!"Invalid memload return!");
@@ -96,13 +96,13 @@ static int exec_load(struct r5sim_machine *mach,
 		__set_reg(core, inst->rd, w);
 		break;
 	case 0x4: /* LBU */
-		err = mach->memload8(mach, paddr_src, (u8 *)(&w));
+		err = core->mmu.load8(&core->mmu, paddr_src, (u8 *)(&w));
 		switch (err) {
-		case MACH_ACCESS_MISALIGN:
+		case __ACCESS_MISALIGN:
 			return TRAP_LD_ADDR_MISALIGN;
-		case MACH_ACCESS_FAULT:
+		case __ACCESS_FAULT:
 			return TRAP_LD_ACCESS_FAULT;
-		case MACH_ACCESS_OK:
+		case __ACCESS_OK:
 			break;
 		default:
 			r5sim_assert(!"Invalid memload return!");
@@ -111,13 +111,13 @@ static int exec_load(struct r5sim_machine *mach,
 		__set_reg(core, inst->rd, w);
 		break;
 	case 0x5: /* LHU */
-		err = mach->memload16(mach, paddr_src, (u16 *)(&w));
+		err = core->mmu.load16(&core->mmu, paddr_src, (u16 *)(&w));
 		switch (err) {
-		case MACH_ACCESS_MISALIGN:
+		case __ACCESS_MISALIGN:
 			return TRAP_LD_ADDR_MISALIGN;
-		case MACH_ACCESS_FAULT:
+		case __ACCESS_FAULT:
 			return TRAP_LD_ACCESS_FAULT;
-		case MACH_ACCESS_OK:
+		case __ACCESS_OK:
 			break;
 		default:
 			r5sim_assert(!"Invalid memload return!");
@@ -153,14 +153,14 @@ static int exec_store(struct r5sim_machine *mach,
 
 	switch (inst->func3) {
 	case 0x0: /* SB */
-		err = mach->memstore8(mach, paddr_dst,
-				      (u8)core->reg_file[inst->rs2]);
+		err = core->mmu.store8(&core->mmu, paddr_dst,
+				       (u8)core->reg_file[inst->rs2]);
 		switch (err) {
-		case MACH_ACCESS_MISALIGN:
+		case __ACCESS_MISALIGN:
 			return TRAP_ST_ADDR_MISALIGN;
-		case MACH_ACCESS_FAULT:
+		case __ACCESS_FAULT:
 			return TRAP_ST_ACCESS_FAULT;
-		case MACH_ACCESS_OK:
+		case __ACCESS_OK:
 			break;
 		default:
 			r5sim_assert(!"Invalid memstore return!");
@@ -168,14 +168,14 @@ static int exec_store(struct r5sim_machine *mach,
 
 		break;
 	case 0x1: /* SH */
-		err = mach->memstore16(mach, paddr_dst,
-				       (u16)core->reg_file[inst->rs2]);
+		err = core->mmu.store16(&core->mmu, paddr_dst,
+					(u16)core->reg_file[inst->rs2]);
 		switch (err) {
-		case MACH_ACCESS_MISALIGN:
+		case __ACCESS_MISALIGN:
 			return TRAP_ST_ADDR_MISALIGN;
-		case MACH_ACCESS_FAULT:
+		case __ACCESS_FAULT:
 			return TRAP_ST_ACCESS_FAULT;
-		case MACH_ACCESS_OK:
+		case __ACCESS_OK:
 			break;
 		default:
 			r5sim_assert(!"Invalid memstore return!");
@@ -183,14 +183,14 @@ static int exec_store(struct r5sim_machine *mach,
 
 		break;
 	case 0x2: /* SW */
-		err = mach->memstore32(mach, paddr_dst,
-				       core->reg_file[inst->rs2]);
+		err = core->mmu.store32(&core->mmu, paddr_dst,
+					core->reg_file[inst->rs2]);
 		switch (err) {
-		case MACH_ACCESS_MISALIGN:
+		case __ACCESS_MISALIGN:
 			return TRAP_ST_ADDR_MISALIGN;
-		case MACH_ACCESS_FAULT:
+		case __ACCESS_FAULT:
 			return TRAP_ST_ACCESS_FAULT;
-		case MACH_ACCESS_OK:
+		case __ACCESS_OK:
 			break;
 		default:
 			r5sim_assert(!"Invalid memstore return!");
@@ -759,13 +759,13 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 	 * sure this happens during control flow instructions. But just
 	 * double check.
 	 */
-	err = mach->memload32(mach, core->pc, &inst_mem);
+	err = core->mmu.iload(&core->mmu, core->pc, &inst_mem);
 	switch (err) {
-	case MACH_ACCESS_MISALIGN:
+	case __ACCESS_MISALIGN:
 		return TRAP_INST_ADDR_MISALIGN;
-	case MACH_ACCESS_FAULT:
+	case __ACCESS_FAULT:
 		return TRAP_INST_ACCESS_FAULT;
-	case MACH_ACCESS_OK:
+	case __ACCESS_OK:
 		break;
 	default:
 		r5sim_assert(!"Invalid memload return!");

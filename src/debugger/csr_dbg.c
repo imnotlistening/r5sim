@@ -203,7 +203,8 @@ int comm_csr(struct r5sim_machine *mach, int argc, char *argv[])
 		printf("%-12s 0x%08x\n", name, csr_val);
 	}
 
-	print_all_csrs(mach);
+	if (args.print_all)
+		print_all_csrs(mach);
 
 	return 0;
 }

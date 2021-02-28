@@ -8,6 +8,8 @@
 
 #include <r5sim/env.h>
 #include <r5sim/log.h>
+#include <r5sim/csr.h>
+#include <r5sim/mmu.h>
 #include <r5sim/core.h>
 #include <r5sim/util.h>
 
@@ -325,6 +327,30 @@ void r5sim_core_default_csrs(struct r5sim_core *core)
 	r5sim_core_add_csr(core, CSR_SCAUSE,		0x0,		CSR_F_READ|CSR_F_WRITE);
 	r5sim_core_add_csr(core, CSR_STVAL,		0x0,		CSR_F_READ|CSR_F_WRITE);
 
+	/*
+	 * The PMP address registers.
+	 */
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR0,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR1,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR2,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR3,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR4,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR5,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR6,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR7,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR8,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR9,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR10,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR11,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR12,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR13,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR14,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPADDR15,	0x0,		CSR_F_READ|CSR_F_WRITE, pmpaddr_rd, pmpaddr_wr);
+
+	r5sim_core_add_csr_fn(core, CSR_PMPCFG0,	0x0,		CSR_F_READ|CSR_F_WRITE|CSR_F_SKIP_WRITE, pmpcfg_rd, pmpcfg_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPCFG1,	0x0,		CSR_F_READ|CSR_F_WRITE|CSR_F_SKIP_WRITE, pmpcfg_rd, pmpcfg_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPCFG2,	0x0,		CSR_F_READ|CSR_F_WRITE|CSR_F_SKIP_WRITE, pmpcfg_rd, pmpcfg_wr);
+	r5sim_core_add_csr_fn(core, CSR_PMPCFG3,	0x0,		CSR_F_READ|CSR_F_WRITE|CSR_F_SKIP_WRITE, pmpcfg_rd, pmpcfg_wr);
 }
 
 /*
@@ -428,4 +454,10 @@ void csr_write(struct r5sim_core *core, u32 csr, u32 value)
 	r5sim_assert(csr < 4096);
 
 	return __raw_csr_write(&core->csr_file[csr], value);
+}
+
+u32 r5sim_csr_index(struct r5sim_core *core,
+		    struct r5sim_csr *csr)
+{
+	return csr - core->csr_file;
 }

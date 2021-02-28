@@ -2,19 +2,27 @@
 # Configure some sample PMP regions for testing purposes.
 #
 
-verbose 5
+verbose 4
 
 # NAPOT region for DRAM.
 #
 # This region has RWX and occupies [0x20000000, 0x30000000]
 #
-csr -w 0x0000001f   PMPCFG0
-csr -w 0x09ffffff   PMPADDR0
+csr -s 0x0000001f   PMPCFG0
+csr -s 0x09ffffff   PMPADDR0
+
+# Uncomment these to verify TOR PMPs. These set the UART
+# registers to have no access permissions; as such when
+# the S-Mode code trys to print a hello message it faults.
+# csr -s 0x00080000   PMPCFG0
+# csr -s 0x01000000   PMPADDR1
+# csr -s 0x01000002   PMPADDR2
 
 # And another NAPOT region for IO.
 #
 #  [0x4000000, 0x6000000] RW-
-csr -w 0x0000001b   PMPCFG1
-csr -w 0x013fffff   PMPADDR1
+#
+csr -s 0x1b000000   PMPCFG0
+csr -s 0x013fffff   PMPADDR3
 
 verbose 2

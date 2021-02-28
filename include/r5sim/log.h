@@ -39,7 +39,7 @@ void __r5sim_log_print(enum r5sim_log_level lvl,
 		       const char *fmt, ...);
 
 /*
- * Separate from the rest of the logging - itrac'ing is _very_ verbose.
+ * Separate from the rest of the logging - itrace'ing is _very_ verbose.
  */
 #define r5sim_itrace(fmt, args...)					\
 	__r5sim_itrace_print(fmt, ##args)

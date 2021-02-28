@@ -25,9 +25,10 @@ typedef void (*r5sim_csr_wrfn)(struct r5sim_core *core,
 struct r5sim_csr {
 	u32	value;
 	u32	flags;
-#define CSR_F_PRESENT	0x1
-#define CSR_F_READ	0x2
-#define CSR_F_WRITE	0x4
+#define CSR_F_PRESENT		0x1
+#define CSR_F_READ		0x2
+#define CSR_F_WRITE		0x4
+#define CSR_F_SKIP_WRITE	0x8
 
 	/*
 	 * Use these functions to intercept reads and writes. You can
@@ -63,6 +64,8 @@ struct r5sim_csr {
 
 u32  csr_read(struct r5sim_core *core, u32 csr);
 void csr_write(struct r5sim_core *core, u32 csr, u32 value);
+u32  r5sim_csr_index(struct r5sim_core *core,
+		     struct r5sim_csr *csr);
 
 static inline u32 __raw_csr_read(struct r5sim_csr *csr)
 {

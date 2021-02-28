@@ -14,11 +14,10 @@ OBJS      = r5sim.o \
             core_intr.o \
             csr.o \
             simple_core.o \
-            vuart.o \
-            vdisk.o \
-            vsys.o
 
 # Subdirectories.
-OBJS      += debugger/
+OBJS      += debugger/ \
+             mmu/ \
+             devices/
 
 APP       = r5sim

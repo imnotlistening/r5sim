@@ -88,7 +88,7 @@ static int r5sim_default_io_memload(struct r5sim_machine *mach,
 	/*
 	 * No device found!
 	 */
-	return MACH_ACCESS_FAULT;
+	return __ACCESS_FAULT;
 }
 
 static int r5sim_default_io_memstore(struct r5sim_machine *mach,
@@ -114,7 +114,7 @@ static int r5sim_default_io_memstore(struct r5sim_machine *mach,
 	/*
 	 * No device found!
 	 */
-	return MACH_ACCESS_FAULT;
+	return __ACCESS_FAULT;
 }
 
 static int r5sim_default_memload32(struct r5sim_machine *mach,
@@ -125,7 +125,7 @@ static int r5sim_default_memload32(struct r5sim_machine *mach,
 	 * Check alignment; we don't support unaligned loads.
 	 */
 	if (paddr & 0x3)
-		return MACH_ACCESS_MISALIGN;
+		return __ACCESS_MISALIGN;
 
 	/*
 	 * DRAM access and BROM access is easy.
@@ -145,7 +145,7 @@ static int r5sim_default_memload32(struct r5sim_machine *mach,
 			 paddr))
 		return r5sim_default_io_memload(mach, paddr, dest);
 	else
-		return MACH_ACCESS_FAULT;
+		return __ACCESS_FAULT;
 
 	return 0;
 }
@@ -155,7 +155,7 @@ static int r5sim_default_memload16(struct r5sim_machine *mach,
 				   u16 *dest)
 {
 	if (paddr & 0x1)
-		return MACH_ACCESS_MISALIGN;
+		return __ACCESS_MISALIGN;
 
 	/* Don't allow non-word aligned IO accesses! */
 	if (addr_in(mach->memory_base,
@@ -169,7 +169,7 @@ static int r5sim_default_memload16(struct r5sim_machine *mach,
 		*dest = __load_half((u16 *)mach->brom,
 				    paddr, mach->brom_base);
 	else
-		return MACH_ACCESS_FAULT;
+		return __ACCESS_FAULT;
 
 	return 0;
 }
@@ -190,7 +190,7 @@ static int r5sim_default_memload8(struct r5sim_machine *mach,
 		*dest = __load_byte(mach->brom,
 				    paddr, mach->brom_base);
 	else
-		return MACH_ACCESS_FAULT;
+		return __ACCESS_FAULT;
 
 	return 0;
 }
@@ -200,7 +200,7 @@ static int r5sim_default_memstore32(struct r5sim_machine *mach,
 				    u32 value)
 {
 	if (paddr & 0x3)
-		return MACH_ACCESS_MISALIGN;
+		return __ACCESS_MISALIGN;
 
 	/*
 	 * No stores to BROM!
@@ -215,7 +215,7 @@ static int r5sim_default_memstore32(struct r5sim_machine *mach,
 			 paddr))
 		return r5sim_default_io_memstore(mach, paddr, value);
 	else
-		return MACH_ACCESS_FAULT;
+		return __ACCESS_FAULT;
 
 	return 0;
 }
@@ -225,7 +225,7 @@ static int r5sim_default_memstore16(struct r5sim_machine *mach,
 				    u16 value)
 {
 	if (paddr & 0x1)
-		return MACH_ACCESS_MISALIGN;
+		return __ACCESS_MISALIGN;
 
 	/*
 	 * No stores to BROM or to IO mem when not word aligned.
@@ -236,7 +236,7 @@ static int r5sim_default_memstore16(struct r5sim_machine *mach,
 		__write_half((u16 *)mach->memory, paddr,
 			     mach->memory_base, value);
 	else
-		return MACH_ACCESS_FAULT;
+		return __ACCESS_FAULT;
 
 	return 0;
 }
@@ -254,7 +254,7 @@ static int r5sim_default_memstore8(struct r5sim_machine *mach,
 		__write_byte(mach->memory, paddr,
 			     mach->memory_base, value);
 	else
-		return MACH_ACCESS_FAULT;
+		return __ACCESS_FAULT;
 
 	return 0;
 }

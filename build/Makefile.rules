@@ -20,13 +20,14 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 
 # Handle the OBJS input; we'll build .o files directly, we'll
 # sub-build for "objects" ending in '/'.
-subobj_name = $(1)$(patsubst %/,%,$(1)).o
+subobj_name = $(1).$(patsubst %/,%,$(1)).o
 
 _objs       = $(filter %.o,$(OBJS))
 _dirs       = $(filter %/,$(OBJS))
 _dir_objs   = $(foreach dir,$(_dirs),$(call subobj_name,$(dir)))
 _final_objs = $(_objs) $(_dir_objs)
-dir_obj     = $(notdir $(CURDIR)).o
+_lds        = $(notdir $(CURDIR)).lds
+dir_obj     = .$(notdir $(CURDIR)).o
 
 MAKE.R      = $(MAKE) -f $(R5SIM_DIR)/build/recurse.mk --no-print-directory
 
@@ -46,7 +47,7 @@ $(_dir_objs): $(_dirs)
 $(dir_obj): $(_objs) $(_dir_objs)
 	@echo "  [LD]\t\t$@"
 ifeq ($(USE_SYMTABLE),1)
-	$(VERBOSE)$(LD) $(LDFLAGS) -T $(@:.o=.lds) -r -o $@ $(_final_objs)
+	$(VERBOSE)$(LD) $(LDFLAGS) -T $(_lds) -r -o $@ $(_final_objs)
 else
 	$(VERBOSE)$(LD) $(LDFLAGS) -r -o $@ $(_final_objs)
 endif

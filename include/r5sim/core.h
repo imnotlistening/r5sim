@@ -11,6 +11,7 @@
 
 #include <r5sim/isa.h>
 #include <r5sim/csr.h>
+#include <r5sim/mmu.h>
 #include <r5sim/list.h>
 
 /*
@@ -53,6 +54,12 @@ struct r5sim_core {
 	u32                   mideleg;
 
 	u32                   mstatus;
+
+	/*
+	 * Memory management unit; includes both the PMP and (future) page
+	 * table management.
+	 */
+	struct r5sim_mmu      mmu;
 
 	/*
 	 * Machine this core belongs to; relevant for handling IO, DRAM

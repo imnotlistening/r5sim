@@ -54,6 +54,7 @@ int  r5sim_debug_exec_line(struct r5sim_machine *mach, char *line);
  * Commands to do debugging!
  */
 int comm_csr(struct r5sim_machine *mach, int argc, char *argv[]);
+int comm_pmp(struct r5sim_machine *mach, int argc, char *argv[]);
 int comm_break(struct r5sim_machine *mach, int argc, char *argv[]);
 int comm_exec(struct r5sim_machine *mach, int argc, char *argv[]);
 

@@ -4,16 +4,14 @@
 
 #include <stddef.h>
 
+#include <r5sim/util.h>
+
 /*
  * Shamelessly stolen from the Linux kernel.
  */
 
 #define WRITE_ONCE(x, y) x = y
 #define READ_ONCE(x)     x
-
-#define container_of(ptr, type, member) ({                      \
-        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
-        (type *)( (char *)__mptr - offsetof(type,member) );})
 
 #define LIST_POISON1 ((void *)0x12345679)
 #define LIST_POISON2 ((void *)0x87654321)
