@@ -316,9 +316,10 @@ static struct r5sim_hwd_command commands[] = {
 	CMD("csr",     comm_csr,     "Control CSR registers"),
 	CMD("break",   comm_break,   "Set, clear, list HW breakpoints"),
 	CMD("step",    comm_step,    "Execute N instructions"),
-	CMD("set",     comm_set,     "Execute N instructions"),
+	CMD("set",     comm_set,     "Set a register to a value"),
 	CMD("verbose", comm_verbose, "Set verbosity level"),
 	CMD("trace",   comm_trace,   "Toggle instruction tracing"),
+	CMD("exec",    comm_exec,    "Execute a script"),
 
 	CMD(NULL,  NULL,     NULL)
 };
@@ -389,6 +390,7 @@ static int process_line(struct r5sim_machine *mach, char *line)
 	cmd = lookup_command(comm_argv[0]);
 	if (!cmd) {
 		printf("Unknown command: '%s'\n", comm_argv[0]);
+		ret = -1;
 		goto done;
 	}
 
@@ -404,9 +406,13 @@ done:
 	return ret;
 }
 
-static char *strip_whitespace(char *line)
+/*
+ * Strip leading whitespace and any potential comments from
+ * the string.
+ */
+static char *r5sim_debug_prep_line(char *line)
 {
-	int end;
+	int end, i;
 
 	/* Goodbye leading whitespace. */
 	while (isspace(*line))
@@ -414,11 +420,30 @@ static char *strip_whitespace(char *line)
 
 	end = strlen(line) - 1;
 
-	/* And goodbye trailing whitespace. */
-	while (isspace(line[end]) && end >= 0)
+	/* Goodbye trailing whitespace. */
+	while (end >= 0 && isspace(line[end]))
 		line[end--] = '\0';
 
+	/*
+	 * Undo the very last '--' above; end above is being used as
+	 * an index, so it's a bit of a misnomer there.
+	 */
+	end++;
+
+	/* And finally remove any comments. */
+	for (i = 0; i < end; i++) {
+		if (line[i] == '#') {
+			line[i] = '\0';
+			break;
+		}
+	}
+
 	return line;
+}
+
+int r5sim_debug_exec_line(struct r5sim_machine *mach, char *line)
+{
+	return process_line(mach, r5sim_debug_prep_line(line));
 }
 
 /*
@@ -426,7 +451,7 @@ static char *strip_whitespace(char *line)
  */
 void r5sim_debug_do_session(struct r5sim_machine *mach)
 {
-	char *line_raw, *line;
+	char *line;
 	int ret;
 	u32 saved_priv = mach->core->priv;
 
@@ -435,20 +460,22 @@ void r5sim_debug_do_session(struct r5sim_machine *mach)
 	printf("\n");
 
 	while (1) {
-		line_raw = readline("dbg $ ");
-		if (!line_raw) {
+		line = readline("dbg $ ");
+		if (!line) {
 			printf("\n");
 			continue;
 		}
 
-		line = strip_whitespace(line_raw);
-
-		if (*line)
+		/*
+		 * Simialr to bash behavior: skip history if the line starts
+		 * with a space.
+		 */
+		if (*line && *line != ' ')
 			add_history(line);
 
-		ret = process_line(mach, line);
+		ret = r5sim_debug_exec_line(mach, line);
 
-		free(line_raw);
+		free(line);
 
 		if (ret == COMM_RUN)
 			break;

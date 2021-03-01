@@ -5,4 +5,5 @@
 OBJS := hwdebug.o \
         session.o \
         csr_dbg.o \
-        break.o
+        break.o \
+        script.o

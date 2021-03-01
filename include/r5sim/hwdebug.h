@@ -48,11 +48,13 @@ static inline int r5sim_hwbreak(struct r5sim_machine *mach, u32 pc)
 
 void r5sim_debug_init(struct r5sim_machine *mach);
 void r5sim_debug_do_session(struct r5sim_machine *mach);
+int  r5sim_debug_exec_line(struct r5sim_machine *mach, char *line);
 
 /*
  * Commands to do debugging!
  */
 int comm_csr(struct r5sim_machine *mach, int argc, char *argv[]);
 int comm_break(struct r5sim_machine *mach, int argc, char *argv[]);
+int comm_exec(struct r5sim_machine *mach, int argc, char *argv[]);
 
 #endif

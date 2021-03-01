@@ -1,0 +1,20 @@
+#
+# Configure some sample PMP regions for testing purposes.
+#
+
+verbose 5
+
+# NAPOT region for DRAM.
+#
+# This region has RWX and occupies [0x20000000, 0x30000000]
+#
+csr -w 0x0000001f   PMPCFG0
+csr -w 0x09ffffff   PMPADDR0
+
+# And another NAPOT region for IO.
+#
+#  [0x4000000, 0x6000000] RW-
+csr -w 0x0000001b   PMPCFG1
+csr -w 0x013fffff   PMPADDR1
+
+verbose 2
