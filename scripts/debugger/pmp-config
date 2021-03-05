@@ -8,8 +8,17 @@ verbose 4
 #
 # This region has RWX and occupies [0x20000000, 0x30000000]
 #
-csr -s 0x0000001f   PMPCFG0
 csr -s 0x09ffffff   PMPADDR0
+
+# And another NAPOT region for IO.
+#
+#  [0x4000000, 0x6000000] RW-
+#
+csr -s 0x013fffff   PMPADDR3
+
+# And the CFG; do it in one write - it's easier to read the
+# debugging this way.
+csr -s 0x1b00001f   PMPCFG0
 
 # Uncomment these to verify TOR PMPs. These set the UART
 # registers to have no access permissions; as such when
@@ -18,11 +27,5 @@ csr -s 0x09ffffff   PMPADDR0
 # csr -s 0x01000000   PMPADDR1
 # csr -s 0x01000002   PMPADDR2
 
-# And another NAPOT region for IO.
-#
-#  [0x4000000, 0x6000000] RW-
-#
-csr -s 0x1b000000   PMPCFG0
-csr -s 0x013fffff   PMPADDR3
 
 verbose 2

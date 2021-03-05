@@ -3,7 +3,7 @@
  * to memory for a given core go through the PMP.
  */
 
-#include <strings.h>
+#include <string.h>
 
 #include <r5sim/log.h>
 #include <r5sim/mmu.h>
@@ -30,16 +30,72 @@ const char *addr_match_str(u32 addr_match)
 	return "INVAL";
 }
 
-static int pmp_is_active(struct r5sim_mmu *mmu)
+/*
+ * From the PMP registers compile the list of checks we must do and specify
+ * the number.
+ *
+ * This compiles the checks into a condensed list. Now there'll be no need
+ * to iterate through the entire list of PMPs; it's a lot slower for SW to
+ * do this than HW.
+ */
+static void pmp_compile(struct r5sim_mmu *mmu)
 {
 	u32 i;
+	u32 base, end;
+	struct pmpcfg *cfg;
+	struct pmpentry *entry;
+	struct pmpcheck *check;
+
+	memset(mmu->checks, 0, sizeof(mmu->checks));
+	mmu->pmp_active_checks = 0;
+	check = &mmu->checks[0];
 
 	for (i = 0; i < 16; i++) {
-		if (mmu->configs[i].addr_match != PMPCFG_AM_OFF)
-			return 1;
-	}
+		cfg = &mmu->configs[i];
+		entry = &mmu->entries[i];
 
-	return 0;
+		switch (cfg->addr_match) {
+		case PMPCFG_AM_OFF:
+			continue;
+		case PMPCFG_AM_TOR:
+			base = i ? mmu->entries[i - 1].raw : 0;
+			base <<= 2;
+			end  = entry->addr;
+			break;
+		case PMPCFG_AM_NA4:
+			base = entry->addr;
+			end  = base + 4;
+			break;
+		case PMPCFG_AM_NAPOT:
+			base = entry->addr;
+			end  = base + entry->size;
+			break;
+		}
+
+		check->base   = base;
+		check->end    = end;
+		check->locked = cfg->locked;
+		check->exec   = cfg->exec;
+		check->write  = cfg->write;
+		check->read   = cfg->read;
+
+		/*
+		 * Debugging! It's important.
+		 */
+		pmp_dbg("PMP %-2d | %s [%c%c%c%c] 0x%08x -> 0x%08x\n",
+			i,
+			cfg->addr_match == PMPCFG_AM_TOR   ? "TOR  " :
+			cfg->addr_match == PMPCFG_AM_NA4   ? "NA4  " :
+			cfg->addr_match == PMPCFG_AM_NAPOT ? "NAPOT" : NULL,
+			check->locked ? 'l' : '-',
+			check->exec   ? 'x' : '-',
+			check->write  ? 'w' : '-',
+			check->read   ? 'r' : '-',
+			check->base, check->end);
+
+		check++;
+		mmu->pmp_active_checks++;
+	}
 }
 
 /*
@@ -91,9 +147,6 @@ void pmpaddr_wr(struct r5sim_core *core,
 	/* Unpack. */
 	entry->size = 1 << (ffs(~entry->raw) + 2);
 	entry->addr = (entry->raw << 2) & ~(entry->size - 1);
-	pmp_dbg("PMPADDR%-2d raw  0x%08x\n", pmpaddr_idx, entry->raw);
-	pmp_dbg("PMPADDR%-2d size 0x%08x\n", pmpaddr_idx, entry->size);
-	pmp_dbg("PMPADDR%-2d addr 0x%08x\n", pmpaddr_idx, entry->addr);
 }
 
 static u32 __pack_one_cfg(struct r5sim_core *core,
@@ -164,26 +217,17 @@ static void __unpack_one_cfg(struct r5sim_core *core,
 	pmpcfg->exec       = get_field(value, CSR_PMPCFG_X);
 	pmpcfg->write      = get_field(value, CSR_PMPCFG_W);
 	pmpcfg->read       = get_field(value, CSR_PMPCFG_R);
-
-	pmp_dbg("Wrote PMPCFG%-2d | %-5s %c%c%c%c\n",
-		cfg,
-		addr_match_str(pmpcfg->addr_match),
-		pmpcfg->locked ? 'l' : '-',
-		pmpcfg->exec   ? 'x' : '-',
-		pmpcfg->write  ? 'w' : '-',
-		pmpcfg->read   ? 'r' : '-');
 }
 
 void pmpcfg_wr(struct r5sim_core *core,
 	       struct r5sim_csr *csr,
 	       u32 type, u32 *value)
 {
-	u32 pmpcfg_old, pmpcfg = 0;
+	u32 pmpcfg = 0;
 	u32 csr_idx = r5sim_csr_index(core, csr);
 	u32 pmpcfg_idx = csr_idx - CSR_PMPCFG0;
 
 	pmpcfg = __raw_csr_read(csr);
-	pmpcfg_old = pmpcfg;
 
 	/*
 	 * We'll attempt to update the pmpcfg based on the passed write.
@@ -201,9 +245,6 @@ void pmpcfg_wr(struct r5sim_core *core,
 		pmpcfg &= ~(*value);
 		break;
 	}
-
-	pmp_dbg("Updating PMPCFG%d; old value: 0x%08x\n",
-		pmpcfg_idx, pmpcfg_old);
 
 	/* Scale the config index since it came in as a multiple of 4. */
 	pmpcfg_idx *= 4;
@@ -228,107 +269,79 @@ void pmpcfg_wr(struct r5sim_core *core,
 	 * reject U/S accesses if there's no match. If at least one PMP is
 	 * active, then we will reject U/S accesses if there's no match.
 	 */
-	core->mmu.pmp_active = pmp_is_active(&core->mmu);
-	pmp_dbg("PMP active: %s\n", core->mmu.pmp_active ? "yes" : "no");
-}
-
-/*
- * Return 0 for no match, or non-zero for a match.
- */
-static int pmp_check_match(struct r5sim_core *core,
-			   u32 entry_nr, u32 addr)
-{
-	u32 base, end;
-	struct pmpcfg *cfg = &core->mmu.configs[entry_nr];
-	struct pmpentry *entry = &core->mmu.entries[entry_nr];
-
-	/*
-	 * Step one: determine a match. The largest access we support is
-	 * 4 bytes and the min granularity of the PMP is 4 bytes so there
-	 * cannot be any of the half in half out access considerations
-	 * that the spec mentions. This will change if we support MXLEN=64.
-	 * But in that case we'll probably just drop NA4 support.
-	 */
-	switch (cfg->addr_match) {
-	case PMPCFG_AM_OFF:
-		return 0; /* No matches. */
-	case PMPCFG_AM_TOR:
-		base = entry_nr ?
-			core->mmu.entries[entry_nr - 1].raw : 0;
-		base <<= 2;
-		end  = entry->addr;
-		break;
-	case PMPCFG_AM_NA4:
-		base = entry->addr;
-		end  = base + 4;
-		break;
-	case PMPCFG_AM_NAPOT:
-		base = entry->addr;
-		end  = base + entry->size;
-		break;
-	}
-
-	pmp_trace("Check: 0x%08x in [0x%08x,0x%08x]\n",
-		  addr, base, end);
-
-	return addr >= base && addr < end;
+	pmp_compile(&core->mmu);
+	pmp_dbg("PMP active: %s\n",
+		core->mmu.pmp_active_checks ? "yes" : "no");
 }
 
 /*
  * We have 3 possible returns:
  *
- *   -1  -  Matches and denied.
- *    0  -  No match.
- *    1  -  Matches and allowed.
+ *   -1   -  Matches and rejected.
+ *    0   -  No match.
+ *    1   -  Matches and allowed.
  */
 static int pmp_load_ok(struct r5sim_core *core,
 		       u32 entry_nr, u32 addr)
 {
-	struct pmpcfg *cfg = &core->mmu.configs[entry_nr];
+	struct pmpcheck *check = &core->mmu.checks[entry_nr];
+	int addr_check;
+	int priv_allowed;
+	int load_allowed;
 
-	if (!pmp_check_match(core, entry_nr, addr))
-		return 0;
+	addr_check   = addr >= check->base && addr < check->end;
+	priv_allowed = !check->locked && core->priv > RV_PRIV_S;
+	load_allowed = check->read || priv_allowed;
 
 	/*
-	 * We have a match - verify there's load permissions. We need to
-	 * return -1 for a deny, 1 for an allow. Multplying by 2 gets us
-	 * to either 0, or 2, depending on if read is set. Subtracting 1
-	 * then gets to -1 or 1.
+	 * A dirty optimization. This completely avoids the need for branches
+	 * in the PMP check here. The branching is at a level higher.
+	 *
+	 * This takes advantage of the fact that C gives us back a 1 or 0 for
+	 * a comparison.
+	 *
+	 * If addr_check is 0 we are done. 0 anded with anything is just 0
+	 * and since the PMP didn't match we want to return 0. The -addr_check
+	 * stays 0 if it's already 0, or becomes -1 (i.e 0xffffffff) if it's 1
+	 * and thus lets the subsequent condition through.
+	 *
+	 * If we do have a match we want to return -1 for a reject or 1 for an
+	 * allow. load_allowed will be 1 if either we have the priv override or
+	 * if the PMP allows the sub-M mode SW to access it. We then scale by
+	 * 2 to either 0 or 2 and then subtract 1. That way we return -1 when
+	 * load_allowed is 0, or 1 when load_allowed is 1.
 	 */
-	if (!cfg->locked && core->priv > RV_PRIV_S)
-		return 1;
-
-	return (cfg->read << 1) - 1;
+	return -addr_check & ((load_allowed << 1) - 1);
 }
 
 static int pmp_store_ok(struct r5sim_core *core,
 			u32 entry_nr, u32 addr)
 {
-	struct pmpcfg *cfg = &core->mmu.configs[entry_nr];
+	struct pmpcheck *check = &core->mmu.checks[entry_nr];
+	int addr_check;
+	int priv_allowed;
+	int store_allowed;
 
-	if (!pmp_check_match(core, entry_nr, addr))
-		return 0;
+	addr_check    = addr >= check->base && addr < check->end;
+	priv_allowed  = !check->locked && core->priv > RV_PRIV_S;
+	store_allowed = check->read || priv_allowed;
 
-	if (!cfg->locked && core->priv > RV_PRIV_S)
-		return 1;
-
-	return (cfg->write << 1) - 1;
+	return -addr_check & ((store_allowed << 1) - 1);
 }
 
 static int pmp_exec_ok(struct r5sim_core *core,
 		       u32 entry_nr, u32 addr)
 {
-	struct pmpcfg *cfg = &core->mmu.configs[entry_nr];
+	struct pmpcheck *check = &core->mmu.checks[entry_nr];
+	int addr_check;
+	int priv_allowed;
+	int exec_allowed;
 
-	if (!pmp_check_match(core, entry_nr, addr))
-		return 0;
+	addr_check   = addr >= check->base && addr < check->end;
+	priv_allowed = !check->locked && core->priv > RV_PRIV_S;
+	exec_allowed = (check->exec && check->read) || priv_allowed;
 
-	if (!cfg->locked && core->priv > RV_PRIV_S)
-		return 1;
-
-	if (cfg->exec && cfg->read)
-		return 1;
-	return -1;
+	return -addr_check & ((exec_allowed << 1) - 1);
 }
 
 /*
@@ -336,7 +349,7 @@ static int pmp_exec_ok(struct r5sim_core *core,
  * also probably a bad idea... But... Is what it is.
  */
 #define PMP_CHECK_AND_RETURN(func, core, entry, addr)		\
-	do {							\
+	{							\
 		int ok = func(core, entry, addr);		\
 								\
 		switch (ok) {					\
@@ -353,7 +366,18 @@ static int pmp_exec_ok(struct r5sim_core *core,
 				  entry);			\
 			return 0;				\
 		}						\
-	} while (0)
+	}
+
+/*
+ * Either nothing matched or there were no PMPs. If there's no PMPs
+ * installed, then every access is allowed. If there is at least one
+ * PMP installed, but no match, M-Mode accesses are still allowed.
+ *
+ * If neither case is true, then return -1; otherwise return 0.
+ */
+#define PMP_NO_MATCH_CHECK(core)					\
+	(((core)->priv == RV_PRIV_M ||					\
+	  (core)->mmu.pmp_active_checks == 0) - 1)
 
 /*
  * Check if the requested load is allowed. Return 0 if the load is allowed,
@@ -361,91 +385,38 @@ static int pmp_exec_ok(struct r5sim_core *core,
  */
 int r5sim_pmp_load_allowed(struct r5sim_core *core, u32 addr)
 {
+	int i = 0;
+
 	pmp_trace("PMP: LOAD  @ 0x%08x\n", addr);
-	if (!core->mmu.pmp_active) {
-		pmp_trace("PMP:    [--] allowed!\n");
-		return 0;
-	}
 
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 0,  addr);
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 1,  addr);
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 2,  addr);
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 3,  addr);
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 4,  addr);
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 5,  addr);
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 6,  addr);
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 7,  addr);
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 8,  addr);
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 9,  addr);
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 10, addr);
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 11, addr);
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 12, addr);
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 13, addr);
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 14, addr);
-	PMP_CHECK_AND_RETURN(pmp_load_ok, core, 15, addr);
+	for (i = 0; i < core->mmu.pmp_active_checks; i++)
+		PMP_CHECK_AND_RETURN(pmp_load_ok, core, i, addr);
 
-	/* Nothing matched. M mode accesses are OK, sub-M not. */
-	if (core->priv == RV_PRIV_M)
-		return 0;
-	return -1;
+	return PMP_NO_MATCH_CHECK(core);
 }
 
 int r5sim_pmp_store_allowed(struct r5sim_core *core, u32 addr)
 {
-	pmp_trace("PMP: STORE @ 0x%08x\n", addr);
-	if (!core->mmu.pmp_active) {
-		pmp_trace("PMP:    [--] allowed!\n");
-		return 0;
-	}
+	int i = 0;
 
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 0,  addr);
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 1,  addr);
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 2,  addr);
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 3,  addr);
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 4,  addr);
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 5,  addr);
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 6,  addr);
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 7,  addr);
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 8,  addr);
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 9,  addr);
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 10, addr);
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 11, addr);
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 12, addr);
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 13, addr);
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 14, addr);
-	PMP_CHECK_AND_RETURN(pmp_store_ok, core, 15, addr);
+	pmp_trace("PMP: LOAD  @ 0x%08x\n", addr);
 
-	if (core->priv == RV_PRIV_M)
-		return 0;
-	return -1;
+	for (i = 0; i < core->mmu.pmp_active_checks; i++)
+		PMP_CHECK_AND_RETURN(pmp_store_ok, core, i, addr);
+
+	/* Nothing matched. M mode accesses are OK, sub-M not. */
+	return PMP_NO_MATCH_CHECK(core);
 }
 
 int r5sim_pmp_exec_allowed(struct r5sim_core *core, u32 addr)
 {
-	pmp_trace("PMP: ILOAD @ 0x%08x\n", addr);
-	if (!core->mmu.pmp_active) {
-		pmp_trace("PMP:    [--] allowed!\n");
-		return 0;
-	}
+	int i = 0;
 
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 0,  addr);
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 1,  addr);
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 2,  addr);
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 3,  addr);
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 4,  addr);
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 5,  addr);
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 6,  addr);
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 7,  addr);
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 8,  addr);
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 9,  addr);
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 10, addr);
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 11, addr);
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 12, addr);
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 13, addr);
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 14, addr);
-	PMP_CHECK_AND_RETURN(pmp_exec_ok, core, 15, addr);
+	pmp_trace("PMP: LOAD  @ 0x%08x\n", addr);
 
-	if (core->priv == RV_PRIV_M)
-		return 0;
-	return -1;
+	for (i = 0; i < core->mmu.pmp_active_checks; i++)
+		PMP_CHECK_AND_RETURN(pmp_exec_ok, core, i, addr);
+
+	/* Nothing matched. M mode accesses are OK, sub-M not. */
+	return PMP_NO_MATCH_CHECK(core);
 }

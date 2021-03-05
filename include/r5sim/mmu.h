@@ -38,10 +38,31 @@ struct pmpentry {
 	u32 size;
 };
 
+/*
+ * Instead of traversing the PMP structs every instruction, precompile
+ * the PMPs into a sequence of checks. The PMP structs are not that
+ * complicated, but any if condition hurts. Also redundant loads of bases
+ * and ends are all unnecessary.
+ */
+struct pmpcheck {
+	/* Pulled and decoded from the ADDRx registers. */
+	u32 base;
+	u32 end;
+
+	/* Pulled from the CFGx registers. */
+	u32 locked;
+	u32 exec;
+	u32 write;
+	u32 read;
+};
+
 struct r5sim_mmu {
 	struct pmpcfg   configs[16];
 	struct pmpentry entries[16];
-	int             pmp_active;
+
+	struct pmpcheck checks[16];
+
+	int             pmp_active_checks;
 
 	/*
 	 * Load and store values via memory management hierarchy.
