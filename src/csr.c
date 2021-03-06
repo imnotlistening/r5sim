@@ -13,6 +13,16 @@
 #include <r5sim/core.h>
 #include <r5sim/util.h>
 
+/*
+ * Any write to this triggers an immediate simulator exit.
+ */
+static void csr_sim_exit(struct r5sim_core *core,
+			 struct r5sim_csr *csr,
+			 u32 type, u32 *value)
+{
+	exit(*value);
+}
+
 static void csr_mstatus_read(struct r5sim_core *core,
 			     struct r5sim_csr *csr)
 {
@@ -351,6 +361,9 @@ void r5sim_core_default_csrs(struct r5sim_core *core)
 	r5sim_core_add_csr_fn(core, CSR_PMPCFG1,	0x0,		CSR_F_READ|CSR_F_WRITE|CSR_F_SKIP_WRITE, pmpcfg_rd, pmpcfg_wr);
 	r5sim_core_add_csr_fn(core, CSR_PMPCFG2,	0x0,		CSR_F_READ|CSR_F_WRITE|CSR_F_SKIP_WRITE, pmpcfg_rd, pmpcfg_wr);
 	r5sim_core_add_csr_fn(core, CSR_PMPCFG3,	0x0,		CSR_F_READ|CSR_F_WRITE|CSR_F_SKIP_WRITE, pmpcfg_rd, pmpcfg_wr);
+
+	/* Custom CSRs. */
+	r5sim_core_add_csr_fn(core, CSR_CUSTOM_SIMEXIT,	0x0,		CSR_F_READ|CSR_F_WRITE, NULL, csr_sim_exit);
 }
 
 /*

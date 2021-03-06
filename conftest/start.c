@@ -71,5 +71,5 @@ void sv_start(void)
 
 	ct_exec_tests(submodules_sv);
 
-	while (1);
+	write_csr(CSR_CUSTOM_SIMEXIT, 0);
 }

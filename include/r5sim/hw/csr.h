@@ -132,5 +132,9 @@
 
 #define CSR_STVAL		0x143
 
+/*
+ * Custom CSRs.
+ */
+#define CSR_CUSTOM_SIMEXIT	0x5C0
 
 #endif
