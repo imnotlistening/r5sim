@@ -380,8 +380,6 @@ struct r5sim_csr *__csr_always(struct r5sim_core *core, u32 rd, u32 csr)
 	if ((csr_reg->flags & CSR_F_READ) != 0) {
 		if (csr_reg->read_fn)
 			csr_reg->read_fn(core, csr_reg);
-		r5sim_dbg("CSR [R] %-15s v=0x%08x\n",
-			  csr_reg->name, __raw_csr_read(csr_reg));
 		__set_reg(core, rd, __raw_csr_read(csr_reg));
 	}
 
