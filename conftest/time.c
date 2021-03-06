@@ -31,7 +31,7 @@ u32 ct_compute_perf(void)
 	struct ct_time start, end, diff;
 	u32 cycles_start = 0, cycles_end = 0;
 	volatile u32 a, b, c, d;
-	u32 i, iterations = 1000000;
+	u32 i, iterations = 2000000;
 
 	a = 1;
 	b = 2;

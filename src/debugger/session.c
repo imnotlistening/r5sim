@@ -252,7 +252,7 @@ static int comm_verbose(struct r5sim_machine *mach,
 static int comm_trace(struct r5sim_machine *mach,
 		      int argc, char *argv[])
 {
-	struct r5sim_app_args *app_args;
+	struct r5sim_core *core = mach->core;
 
 	if (argc != 1) {
 		printf("Usage:\n\n");
@@ -260,11 +260,9 @@ static int comm_trace(struct r5sim_machine *mach,
 		return -1;
 	}
 
-	app_args = r5sim_app_get_args();
+	core->itrace = !core->itrace;
 
-	app_args->itrace = !app_args->itrace;
-
-	printf("Tracing %s!\n", app_args->itrace ? "enabled" : "disabled");
+	printf("Tracing %s!\n", core->itrace ? "enabled" : "disabled");
 
 	return 0;
 }

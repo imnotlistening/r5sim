@@ -23,7 +23,7 @@ static int exec_misc_mem(struct r5sim_machine *mach,
 			 struct r5sim_core *core,
 			 const r5_inst *__inst)
 {
-	r5sim_itrace("NO-OP\n");
+	r5sim_itrace(core, "NO-OP\n");
 
 	/*
 	 * For the simple core these fence operations are just no-ops.
@@ -129,7 +129,8 @@ static int exec_load(struct r5sim_machine *mach,
 		return TRAP_ILLEGAL_INST;
 	}
 
-	r5sim_itrace("%-6s @ 0x%08x [imm=0x%x] rs=%-3s rd=%s\n",
+	r5sim_itrace(core,
+		     "%-6s @ 0x%08x [imm=0x%x] rs=%-3s rd=%s\n",
 		     r5sim_load_func3_to_str(inst->func3),
 		     paddr_src,
 		     sign_extend(inst->imm_11_0, 11),
@@ -201,7 +202,8 @@ static int exec_store(struct r5sim_machine *mach,
 		return TRAP_ILLEGAL_INST;
 	}
 
-	r5sim_itrace("%-6s @ 0x%08x [imm=0x%x] rs=%-3s rd=%-3s\n",
+	r5sim_itrace(core,
+		     "%-6s @ 0x%08x [imm=0x%x] rs=%-3s rd=%-3s\n",
 		     r5sim_store_func3_to_str(inst->func3),
 		     paddr_dst,
 		     imm,
@@ -264,7 +266,8 @@ static int exec_op_imm(struct r5sim_machine *mach,
 		break;
 	}
 
-	r5sim_itrace("%-6s %-3s <- %-3s [imm=0x%x]\n",
+	r5sim_itrace(core,
+		     "%-6s %-3s <- %-3s [imm=0x%x]\n",
 		     r5sim_op_imm_func3_to_str(inst->func3),
 		     r5sim_reg_to_str(inst->rd),
 		     r5sim_reg_to_str(inst->rs1),
@@ -336,7 +339,8 @@ static int exec_op_i(struct r5sim_machine *mach,
 		break;
 	}
 
-	r5sim_itrace("%-6s %-3s <- %-3s op %-3s\n",
+	r5sim_itrace(core,
+		     "%-6s %-3s <- %-3s op %-3s\n",
 		     r5sim_op_i_func3_to_str(inst->func3, inst->func7),
 		     r5sim_reg_to_str(inst->rd),
 		     r5sim_reg_to_str(inst->rs1),
@@ -398,7 +402,8 @@ static int exec_op_m(struct r5sim_machine *mach,
 		break;
 	}
 
-	r5sim_itrace("%-6s %-3s <- %-3s op %-3s\n",
+	r5sim_itrace(core,
+		     "%-6s %-3s <- %-3s op %-3s\n",
 		     r5sim_op_m_func3_to_str(inst->func3),
 		     r5sim_reg_to_str(inst->rd),
 		     r5sim_reg_to_str(inst->rs1),
@@ -439,7 +444,8 @@ static int exec_jal(struct r5sim_machine *mach,
 
 	core->pc += sign_extend(offset, 20);
 
-	r5sim_itrace("LR     %-3s [0x%08x] New PC=0x%08x # imm=0x%x\n",
+	r5sim_itrace(core,
+		     "LR     %-3s [0x%08x] New PC=0x%08x # imm=0x%x\n",
 		     r5sim_reg_to_str(inst->rd), lr, core->pc, offset);
 
 	return TRAP_ALL_GOOD;
@@ -462,7 +468,8 @@ static int exec_jalr(struct r5sim_machine *mach,
 
 	core->pc = target;
 
-	r5sim_itrace("LR     %-3s [0x%08x] New PC=%08x # rs=%-3s imm=%x\n",
+	r5sim_itrace(core,
+		     "LR     %-3s [0x%08x] New PC=%08x # rs=%-3s imm=%x\n",
 		     r5sim_reg_to_str(inst->rd), lr,
 		     core->pc,
 		     r5sim_reg_to_str(inst->rs1),
@@ -526,7 +533,8 @@ static int exec_branch(struct r5sim_machine *mach,
 		core->pc += 4;
 	}
 
-	r5sim_itrace("%-6s %-3s [0x%08x] vs %-3s [0x%08x]; New PC=%08x [%-4s] # imm=%x\n",
+	r5sim_itrace(core,
+		     "%-6s %-3s [0x%08x] vs %-3s [0x%08x]; New PC=%08x [%-4s] # imm=%x\n",
 		     r5sim_branch_func3_to_str(inst->func3),
 		     r5sim_reg_to_str(inst->rs1), rs1,
 		     r5sim_reg_to_str(inst->rs2), rs2,
@@ -547,7 +555,8 @@ static int exec_auipc(struct r5sim_machine *mach,
 	__set_reg(core, inst->rd,
 		  (*inst_u32 & 0xfffff000) + core->pc);
 
-	r5sim_itrace("AIUPC  %-3s <- 0x%08x + 0x%08x\n",
+	r5sim_itrace(core,
+		     "AIUPC  %-3s <- 0x%08x + 0x%08x\n",
 		     r5sim_reg_to_str(inst->rd),
 		     core->pc,
 		     (*inst_u32 & 0xfffff000));
@@ -564,7 +573,8 @@ static int exec_lui(struct r5sim_machine *mach,
 
 	__set_reg(core, inst->rd, *inst_u32 & 0xfffff000);
 
-	r5sim_itrace("LUI    %-3s <- 0x%08x\n",
+	r5sim_itrace(core,
+		     "LUI    %-3s <- 0x%08x\n",
 		     r5sim_reg_to_str(inst->rd),
 		     *inst_u32 & 0xfffff000);
 
@@ -672,7 +682,8 @@ static int exec_system(struct r5sim_machine *mach,
 		goto done;
 	}
 
-	r5sim_itrace("%-6s   0x%3X rd=%-3s %s=%u\n",
+	r5sim_itrace(core,
+		     "%-6s   0x%3X rd=%-3s %s=%u\n",
 		     r5sim_system_func3_to_str(inst->func3, csr),
 		     csr,
 		     r5sim_reg_to_str(inst->rd),
@@ -775,7 +786,8 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 	fam = simple_core_opcode_fam(inst);
 	op_type = (inst->opcode & 0x7c) >> 2;
 
-	r5sim_itrace("PC 0x%08x i=0x%08x op=%-3d %-8s | ",
+	r5sim_itrace(core,
+		     "PC 0x%08x i=0x%08x op=%-3d %-8s | ",
 		     core->pc, inst_mem,
 		     op_type, fam->op_name);
 
@@ -789,7 +801,7 @@ static int simple_core_exec_one(struct r5sim_machine *mach,
 
 	strap = fam->op_exec(mach, core, inst);
 	if (strap != TRAP_ALL_GOOD) {
-		r5sim_itrace("Exception! [%d]\n", strap);
+		r5sim_itrace(core, "Exception! [%d]\n", strap);
 		return strap;
 	}
 

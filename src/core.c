@@ -8,6 +8,7 @@
 #include <signal.h>
 
 #include <r5sim/log.h>
+#include <r5sim/app.h>
 #include <r5sim/env.h>
 #include <r5sim/isa.h>
 #include <r5sim/core.h>
@@ -321,6 +322,9 @@ void r5sim_core_init_common(struct r5sim_core *core)
 	 * an page table.
 	 */
 	r5sim_mmu_use_default(core);
+
+	/* Use tracing? */
+	core->itrace = r5sim_app_get_args()->itrace;
 }
 
 void r5sim_core_describe(struct r5sim_core *core)

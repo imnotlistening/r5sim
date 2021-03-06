@@ -25,6 +25,11 @@ struct r5sim_machine;
 struct r5sim_core {
 	const char           *name;
 
+	/*
+	 * Set to non-zero if instruction tracing should be enabled.
+	 */
+	u32                   itrace;
+
 	u32                   reg_file[32];
 	u32                   pc;
 

@@ -5,6 +5,9 @@
 #ifndef __R5SIM_LOG_H__
 #define __R5SIM_LOG_H__
 
+#include <stdio.h>
+#include <stdarg.h>
+
 enum r5sim_log_level {
 	ERR = 0,
 	WARN,
@@ -40,9 +43,31 @@ void __r5sim_log_print(enum r5sim_log_level lvl,
 
 /*
  * Separate from the rest of the logging - itrace'ing is _very_ verbose.
+ * It also needs to be quick; since this is present in the instruction
+ * execution path and memory load paths, determining whether to itrace needs
+ * to be quick.
+ *
+ * Here we have a single branch instruction; theoretically it could perhaps
+ * be better if we did some dynamic code updating or some such but that's
+ * complicated. That potentially requires instruction cache updates and..
+ * Yeah, I dunno - surely modern branch predictors will make this execute
+ * pretty fast 99.999... % of the time.
  */
-#define r5sim_itrace(fmt, args...)					\
-	__r5sim_itrace_print(fmt, ##args)
+#define r5sim_itrace(core, fmt, args...)			\
+	do {							\
+		if ((core)->itrace)				\
+			__r5sim_itrace_print(fmt, ##args);	\
+	} while (0)
+
+__attribute__((format (printf, 1, 2)))
+static inline void __r5sim_itrace_print(const char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+	(void) vprintf(fmt, args);
+	va_end(args);
+}
 
 __attribute__((format (printf, 1, 2)))
 void __r5sim_itrace_print(const char *fmt, ...);
