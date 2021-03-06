@@ -19,18 +19,19 @@ static struct option app_opts[] = {
 	{ "bootrom",		1, NULL, 'b' },
 	{ "disk",		1, NULL, 'd' },
 	{ "itrace",		1, NULL, 'T' },
+	{ "script",		1, NULL, 's' },
 
 	{ NULL,			0, NULL,  0  }
 };
 
-static const char *app_opts_str = "hvb:d:T";
+static const char *app_opts_str = "hvb:d:Ts:";
 
 static void r5sim_help(void) {
 
 	fprintf(stderr,
 "R5 Simulator help. General usage:\n"
 "\n"
-"  $ r5sim [-hvq] [-b <BOOTROM>]\n"
+"  $ r5sim [-hvqT] <-b BOOTROM> [-d <DISK>] [-s <SCRIPT>]\n"
 "\n"
 "Options:\n"
 "\n"
@@ -43,6 +44,7 @@ static void r5sim_help(void) {
 "  -d,--disk             Specify a file to treat as a disk. This will be loaded\n"
 "                        as a VDISK device.\n"
 "  -T,--itrace           Turn on instruction tracing; this is _very_ verbose.\n"
+"  -s,--script           Execute a script before jumping to the BROM.\n"
 "\n"
 "Execute the R5 simulator; BOOTROM is a binary blob of instructions/data\n"
 "that should be loaded into memory and executed. This will be the first\n"
@@ -88,6 +90,9 @@ static int r5sim_getopts(int argc, char * const argv[])
 		case 'T':
 			app_args.itrace = 1;
 			break;
+		case 's':
+			app_args.script = optarg;
+			break;
 		case '?':
 			app_args.help = 1;
 			return -1;
@@ -130,6 +135,15 @@ int main(int argc, char * const argv[])
 	r5sim_machine_print(mach);
 
 	r5sim_debug_init(mach);
+
+	if (args->script) {
+		char *script_args[] = {
+			"exec",
+			(char *)args->script,
+		};
+
+		comm_exec(mach, 2, script_args);
+	}
 
 	r5sim_machine_load_brom(mach);
 

@@ -12,6 +12,7 @@ struct r5sim_app_args {
 	int         itrace;
 	const char *bootrom;
 	const char *disk_file;
+	const char *script;
 };
 
 struct r5sim_app_args *
