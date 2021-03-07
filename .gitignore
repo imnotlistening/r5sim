@@ -5,9 +5,7 @@
 # r5sim specific
 bin/*
 tmp/*
-
-# New "binaries" that get generated for the R5 builds.
-*.bin
+.config.*
 
 # Some binaries that get left around in the build process.
 src/r5sim

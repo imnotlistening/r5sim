@@ -1,0 +1,18 @@
+#
+# Configurations for the BROM. There's not a ton.
+#
+
+# Config              Default
+# ------              -------
+
+#
+# Make the bootloader pause before attempting to load the first KBs of
+# the disk image. The bootloader will wait for any input on the PTY.
+# Useful for debugging in some cases.
+#
+# Note that there's a bit of a bug in the VUART where a signal (i.e a
+# debug CTRL-z - A.K.A SIGTSTP) will cause the underlying read() syscall
+# to be interrupted and return. Thus when we exit the debugger via run
+# the system will boot.
+#
+PAUSE_B4_LOAD         no

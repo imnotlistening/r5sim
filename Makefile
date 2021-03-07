@@ -16,10 +16,15 @@ ifeq ($(V),1)
 VERBOSE     =
 endif
 
+CONFIG      =
+ifneq ($(C),)
+CONFIG      = $(realpath $(C))
+endif
+
 MAKE.R      = $(MAKE) -f $(R5SIM_DIR)/build/recurse.mk --no-print-directory
 
 # Export some environment variables for the sub-makefiles.
-export R5SIM_DIR INSTALL_DIR SCRIPTS VERBOSE
+export R5SIM_DIR INSTALL_DIR SCRIPTS VERBOSE CONFIG
 
 .PHONY: install build $(SUBDIRS)
 
@@ -32,7 +37,7 @@ $(SUBDIRS):
 clean:
 	@for d in $(SUBDIRS); do			\
 		echo Cleaning: $$d;			\
-		$(MAKE.R) -C $$d clean ;		\
+		$(MAKE.R) -C $$d clean C=$(C) ;		\
 	done
 
 $(INSTALL_DIR):

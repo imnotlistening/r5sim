@@ -32,7 +32,7 @@ dir_obj     = .$(notdir $(CURDIR)).o
 MAKE.R      = $(MAKE) -f $(R5SIM_DIR)/build/recurse.mk --no-print-directory
 
 # Export some environment variables for the sub-makefiles.
-export CC CFLAGS INCLUDES LIBS
+export CC CFLAGS INCLUDES LIBS CONFIG_PATH
 export LD LDFLAGS OBJCOPY NM
 
 # Build sub-dir objects.
@@ -102,6 +102,10 @@ $(APP): $(dir_obj)
 build: $(dir_obj) $(APP) $(BIN)
 	@:
 
+##
+## Installation targets.
+##
+
 # Installation target for applications. It's a trivial copy.
 install-app:
 	$(VERBOSE)if [ x$(APP) != x ]; then \
@@ -120,6 +124,10 @@ install-bin:
 .PHONY: install
 install: install-app install-bin
 
+##
+## Cleaning targets.
+##
+
 submake-clean:
 	@for d in $(_dirs); do					\
 		$(MAKE) --no-print-directory -C $$d 		\
@@ -129,8 +137,39 @@ submake-clean:
 # Clean target to wipe out all built files.
 .PHONY: clean
 clean: submake-clean
-	$(VERBOSE)rm -rf *.o $(BIN) $(APP) .deps
+	$(VERBOSE)rm -rf *.o $(BIN) $(APP) .deps .config.*
 	$(VERBOSE)rm -rf $(EXTRA_CLEAN)
+
+##
+## Config related targets.
+##
+
+# If CONFIG_PATH is not set then that means we are the top level Makefile
+# and need to attempt to build a .config.h and .config.mk. We'll then set
+# CONFIG_PATH to the path where lower level makefiles can find the right
+# config includes.
+#
+# The sub-make files will not see these targets since they shouldn't need
+# them. The configs will have been built by the parent.
+ifeq ($(CONFIG_PATH),)
+
+CONFIG_PATH=$(shell pwd)
+
+# Update CFLAGS to auto include the .config.h file.
+CFLAGS += -include $(CONFIG_PATH)/.config.h
+
+# Find all the source config files so we can be sure to rebuild our configs
+# if they change.
+CONFIG_SRC = $(shell find -type f -name Config)
+
+$(CONFIG_PATH)/.config.mk: $(CONFIG) $(CONFIG_SRC)
+	$(VERBOSE)$(SCRIPTS)/config.py Config $(CONFIG)
+
+endif
+
+##
+## Compilation header dependency tracking.
+##
 
 $(DEPDIR):
 	$(VERBOSE)mkdir -p $@
@@ -141,3 +180,7 @@ DEPFILES = $(_dep_c:%.c=$(DEPDIR)/%.d) $(_dep_S:%.S=$(DEPDIR)/%.d)
 $(DEPFILES):
 
 -include $(DEPFILES)
+
+ifneq ($(findstring clean,$(MAKECMDGOALS)),clean)
+-include $(CONFIG_PATH)/.config.mk
+endif

@@ -111,7 +111,9 @@ void start(void)
 {
 	int vdisk_present;
 
+#ifdef CONFIG_PAUSE_B4_LOAD
 	brom_getc();
+#endif
 	brom_puts("Hello! Welcome to the r5sim!\n");
 
 	vdisk_present = readl(VDISK_BASE + VDISK_PRESENT);
