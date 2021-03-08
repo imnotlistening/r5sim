@@ -1,3 +1,7 @@
+/*
+ * Copied from the Linux kernel. See the Linux kernel source
+ * for license.
+ */
 
 #ifndef __R5SIM_LIST_H__
 #define __R5SIM_LIST_H__

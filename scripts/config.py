@@ -1,7 +1,25 @@
 #!/usr/bin/python3
 #
-# Read a config file and default config settings and emit a .config.h and .config.mk
-# file.
+# Copyright 2021, Alex Waterman <imnotlistening@gmail.com>
+#
+# This file is part of r5sim.
+#
+# r5sim is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# r5sim is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with r5sim.  If not, see <https://www.gnu.org/licenses/>.
+# Some general rules that can be used for building C files, etc.
+#
+# Read a config file and default config settings and emit a .config.h and
+# .config.mk file.
 #
 # This aims to function a bit like Kconfig in the Linux kernel, but it's far less
 # powerful or good. However, there's a _lot_ less stuff for us to worry about
